@@ -3,10 +3,8 @@ package event
 import (
 	"encoding/json"
 	"eth-listener/internal/eth_block"
-	"fmt"
-	"sync"
-
 	amqp "github.com/rabbitmq/amqp091-go"
+	"log"
 )
 
 type Consumer struct {
@@ -40,14 +38,14 @@ func (consumer *Consumer) setup() error {
 func (consumer *Consumer) Listen(topics []string) error {
 	ch, err := consumer.conn.Channel()
 	if err != nil {
-		fmt.Printf("Error getting channel: %v\n", err.Error())
+		log.Printf("ERROR::EthListener::Listen::error getting channel: %v\n", err.Error())
 		return err
 	}
 	defer ch.Close()
 
 	q, err := declareRandomQueue(ch)
 	if err != nil {
-		fmt.Printf("Error declaring queue: %v\n", err.Error())
+		log.Printf("ERROR::EthListener::Listen::error declaring queue: %v\n", err.Error())
 		return err
 	}
 
@@ -55,42 +53,32 @@ func (consumer *Consumer) Listen(topics []string) error {
 		ch.QueueBind(
 			q.Name,
 			s,
-			"logs_topic",
+			"eth_blocks",
 			false,
 			nil,
 		)
 
 		if err != nil {
-			fmt.Printf("Error binding queue: %v\n", err.Error())
+			log.Printf("ERROR::EthListener::Listen::error binding queue: %v\n", err.Error())
 			return err
 		}
 	}
 
 	messages, err := ch.Consume(q.Name, "", true, false, false, false, nil)
 	if err != nil {
-		fmt.Printf("Error consuming queue: %v\n", err.Error())
+		log.Printf("ERROR::EthListener::Listen::error consuming queue: %v\n", err.Error())
 		return err
 	}
 
-	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
-		wg.Add(1)
-
-		go func() {
-			defer wg.Done()
-
-			for d := range messages {
-				var bd eth_block.BlockDetails
-				_ = json.Unmarshal(d.Body, &bd)
-				consumer.HandlePayload(bd)
-			}
-		}()
+	for d := range messages {
+		var bd eth_block.BlockDetails
+		_ = json.Unmarshal(d.Body, &bd)
+		consumer.HandlePayload(bd)
 	}
-	wg.Wait()
 
 	return nil
 }
 
 func (consumer *Consumer) HandlePayload(bd eth_block.BlockDetails) {
-	fmt.Printf("Received payload: %v\n", bd)
+	log.Printf("EthListener::Listen:HandlePayload::bd: %v\n", bd)
 }

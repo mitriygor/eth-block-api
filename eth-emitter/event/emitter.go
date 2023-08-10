@@ -39,7 +39,7 @@ func (e *Emitter) Close() error {
 
 func (e *Emitter) Push(event string, severity string) error {
 	err := e.channel.PublishWithContext(context.TODO(),
-		"logs_topic",
+		"eth_blocks",
 		severity,
 		true,
 		false,

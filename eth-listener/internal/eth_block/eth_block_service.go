@@ -1,7 +1,7 @@
 package eth_block
 
 type Service interface {
-	CreateEthBlockService(bd BlockDetails) error
+	InsertEthBlockService(bd BlockDetails) error
 }
 
 type ethBlockService struct {
@@ -14,6 +14,6 @@ func NewEthBlockService(repo Repository) Service {
 	}
 }
 
-func (ebs *ethBlockService) CreateEthBlockService(bd BlockDetails) error {
-	return ebs.ethBlockRepo.CreateEthBlock(bd)
+func (ebs *ethBlockService) InsertEthBlockService(bd BlockDetails) error {
+	return ebs.ethBlockRepo.InsertEthBlock(bd)
 }

@@ -1,6 +1,6 @@
 package config
 
 const (
-	BrokerService = "http://broker-service/handler"
-	RedisHost     = "redis:6379"
+	RedisHost = "redis:6379"
+	MongoURL  = "mongodb://mongo:27017"
 )

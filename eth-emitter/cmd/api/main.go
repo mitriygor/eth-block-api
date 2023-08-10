@@ -34,9 +34,11 @@ func main() {
 
 	rabbitConn, err := connect()
 	if err != nil {
-		log.Println(err)
+		log.Printf("EthEmitter::RabbitMQ: %v\n", err)
 		os.Exit(1)
 	}
+
+	log.Println("EthEmitter::RabbitMQ: Connected to RabbitMQ")
 
 	defer rabbitConn.Close()
 
