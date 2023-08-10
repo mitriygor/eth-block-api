@@ -12,8 +12,6 @@ services:
     volumes:
       - ./../eth-api:/app
     depends_on:
-      - postgresql-reader
-      - postgresql-writer
       - redis
       - mongo
       - rabbitmq
@@ -33,8 +31,6 @@ services:
     volumes:
       - ./../eth-emitter:/app
     depends_on:
-      - postgresql-reader
-      - postgresql-writer
       - redis
       - mongo
       - rabbitmq
@@ -54,60 +50,12 @@ services:
     volumes:
       - ./../eth-listener:/app
     depends_on:
-      - postgresql-reader
-      - postgresql-writer
       - redis
       - mongo
       - rabbitmq
     sysctls:
       - net.ipv4.ip_local_port_range=1024 65535
       - net.ipv4.tcp_tw_reuse=1
-
-
-  postgresql-reader:
-    image: 'postgres:14.2'
-    ports:
-      - "5432:5432"
-    restart: always
-    deploy:
-      mode: replicated
-      replicas: 1
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password123
-      POSTGRESQL_DATABASE: eth_blocks
-      POSTGRES_DB: eth_blocks
-    healthcheck:
-      test: [ "CMD", "pg_isready", "--dbname=eth_blocks", "--username=postgres" ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    volumes:
-      - ./.db-data/postgres/:/var/lib/postgresql/data/
-
-
-  postgresql-writer:
-    image: 'postgres:14.2'
-    ports:
-      - "5433:5433"
-    restart: always
-    deploy:
-      mode: replicated
-      replicas: 1
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password123
-      POSTGRESQL_DATABASE: eth_blocks
-      POSTGRES_DB: eth_blocks
-      PGPORT: 5433
-    command: postgres -p 5433
-    healthcheck:
-      test: [ "CMD", "pg_isready", "--dbname=eth_blocks", "--username=postgres" ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    volumes:
-      - ./.db-data/postgres-writer/:/var/lib/postgresql/data/
 
 
   redis:

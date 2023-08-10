@@ -35,3 +35,14 @@ The builder provides capabilities to run the multi-service application. It consi
   
 
 The project uses the [Air](https://github.com/cosmtrek/air) package for live reloading. It watches for file changes and automatically restarts the application. The Air configuration is stored in the .air.toml file.
+
+
+## MongoDB
+
+![Architecture Diagram](./../assets/screenshots/mongo_db_eth_blocks.png)
+
+
+#### Example of MongoDB URL
+
+   ```bash
+mongodb://localhost:27017/eth_blocks?authSource=admin&readPreference=primary&directConnection=true&ssl=false

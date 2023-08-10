@@ -20,18 +20,10 @@ import (
 
 func main() {
 
-	//connWriter := db.ConnectToDB("DSN_WRITER")
-	//
-	//if connWriter == nil {
-	//	log.Panic("Can't connect to Postgres Writer!")
-	//}
-
-	//defer connWriter.Close()
-
-	//mongoClient, err := connectToMongo()
-	//if err != nil {
-	//	log.Panic(err)
-	//}
+	mongoClient, err := connectToMongo()
+	if err != nil {
+		log.Panic(err)
+	}
 
 	rabbitConn, err := connect()
 
@@ -50,7 +42,7 @@ func main() {
 		DB:       0,
 	})
 
-	ethBlockRepo := eth_block.NewEthBlockRepository(nil, redisClient, rabbitConn, nil)
+	ethBlockRepo := eth_block.NewEthBlockRepository(redisClient, rabbitConn, mongoClient)
 	ethBlockService := eth_block.NewEthBlockService(ethBlockRepo)
 
 	consumer, err := event.NewConsumer(rabbitConn, ethBlockService)
@@ -82,8 +74,6 @@ func connectToMongo() (*mongo.Client, error) {
 		return nil, err
 	}
 
-	log.Println("Connected to mongo!")
-
 	return c, nil
 }
 
@@ -98,7 +88,6 @@ func connect() (*amqp.Connection, error) {
 			fmt.Println("RabbitMQ not yet ready...")
 			counts++
 		} else {
-			log.Println("Connected to RabbitMQ!")
 			connection = c
 			break
 		}

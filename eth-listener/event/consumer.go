@@ -36,6 +36,8 @@ func (consumer *Consumer) setup() error {
 }
 
 func (consumer *Consumer) Listen(topics []string) error {
+	log.Printf("EthListner::Listen::topics: %v\n", topics)
+
 	ch, err := consumer.conn.Channel()
 	if err != nil {
 		log.Printf("ERROR::EthListener::Listen::error getting channel: %v\n", err.Error())
@@ -80,5 +82,8 @@ func (consumer *Consumer) Listen(topics []string) error {
 }
 
 func (consumer *Consumer) HandlePayload(bd eth_block.BlockDetails) {
-	log.Printf("EthListener::Listen:HandlePayload::bd: %v\n", bd)
+	err := consumer.ethBlockService.InsertEthBlockService(bd)
+	if err != nil {
+		log.Printf("ERROR::EthListener::Listen::HandlePayload::error inserting eth block: %v\n", err.Error())
+	}
 }

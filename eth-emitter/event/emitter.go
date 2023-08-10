@@ -50,6 +50,10 @@ func (e *Emitter) Push(event string, severity string) error {
 		},
 	)
 
+	if err != nil {
+		log.Printf("ERROR::EthEmitter::Push::error publishing message: %v\n", err.Error())
+	}
+
 	if confirmed := <-e.confirm; !confirmed.Ack {
 		log.Printf("\nUNCOFIRMED MESSAGE!!!\n")
 	}

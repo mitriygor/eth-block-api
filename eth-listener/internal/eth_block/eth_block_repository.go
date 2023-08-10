@@ -2,8 +2,6 @@ package eth_block
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
 	"github.com/go-redis/redis/v8"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -15,16 +13,14 @@ type Repository interface {
 }
 
 type EthBlockRepository struct {
-	DBW         *sql.DB
 	rabbitConn  *amqp.Connection
 	redisClient *redis.Client
 	mongoClient *mongo.Client
 }
 
-func NewEthBlockRepository(dbw *sql.DB, redisClient *redis.Client, rabbitConn *amqp.Connection, mongoClient *mongo.Client) Repository {
+func NewEthBlockRepository(redisClient *redis.Client, rabbitConn *amqp.Connection, mongoClient *mongo.Client) Repository {
 
 	return &EthBlockRepository{
-		DBW:         dbw,
 		rabbitConn:  rabbitConn,
 		redisClient: redisClient,
 		mongoClient: mongoClient,
@@ -32,13 +28,11 @@ func NewEthBlockRepository(dbw *sql.DB, redisClient *redis.Client, rabbitConn *a
 }
 
 func (ebr *EthBlockRepository) InsertEthBlock(bd BlockDetails) error {
-	fmt.Printf("CreateEthBlock::bd: %v\n", bd)
-
 	collection := ebr.mongoClient.Database("eth_blocks").Collection("eth_blocks")
 
 	_, err := collection.InsertOne(context.TODO(), bd)
 	if err != nil {
-		log.Println("Error inserting into eth_blocks:", err)
+		log.Printf("EthListener::InsertEthBlock::eth_blocks::error: %v\n", err)
 		return err
 	}
 
@@ -47,6 +41,5 @@ func (ebr *EthBlockRepository) InsertEthBlock(bd BlockDetails) error {
 
 func addToQueue(rdb *redis.Client, queueName string, item string, queueLimit int64) {
 	rdb.LPush(context.Background(), queueName, item)
-
 	rdb.LTrim(context.Background(), queueName, -queueLimit, -1)
 }
