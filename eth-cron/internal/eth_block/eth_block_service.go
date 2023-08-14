@@ -1,7 +1,8 @@
 package eth_block
 
 import (
-	"eth-emitter/pkg/json_helper"
+	"eth-cron/pkg/json_helper"
+	"eth-cron/pkg/url_helper"
 	"fmt"
 	"log"
 	"strconv"
@@ -22,15 +23,13 @@ type Service interface {
 type ethBlockService struct {
 	ethBlockRepo Repository
 	url          string
-	id           int
 	jsonRpc      string
 }
 
-func NewEthBlockService(repo Repository, url string, id int, jsonRpc string) Service {
+func NewEthBlockService(repo Repository, url string, jsonRpc string) Service {
 	return &ethBlockService{
 		ethBlockRepo: repo,
 		url:          url,
-		id:           id,
 		jsonRpc:      jsonRpc,
 	}
 }
@@ -99,7 +98,7 @@ func (ebs *ethBlockService) GetLatestBlockNumber() int {
 		Jsonrpc: ebs.jsonRpc,
 		Method:  "eth_blockNumber",
 		Params:  []interface{}{},
-		Id:      ebs.id,
+		Id:      url_helper.GetRandId(),
 	}
 
 	var result BlockNumberResponse
@@ -119,7 +118,7 @@ func (ebs *ethBlockService) GetBlockByNumber(blockNumber int) (BlockResponse, er
 		Jsonrpc: ebs.jsonRpc,
 		Method:  "eth_getBlockByNumber",
 		Params:  []interface{}{hexStr, false},
-		Id:      ebs.id,
+		Id:      url_helper.GetRandId(),
 	}
 
 	var result BlockResponse

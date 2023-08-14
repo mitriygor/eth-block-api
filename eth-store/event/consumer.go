@@ -2,7 +2,7 @@ package event
 
 import (
 	"encoding/json"
-	"eth-listener/internal/eth_block"
+	"eth-store/internal/eth_block"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
 )

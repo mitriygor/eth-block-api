@@ -1,4 +1,4 @@
-module eth-emitter
+module eth-cron
 
 go 1.19
 

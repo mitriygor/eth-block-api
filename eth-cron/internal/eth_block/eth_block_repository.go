@@ -2,7 +2,7 @@ package eth_block
 
 import (
 	"encoding/json"
-	"eth-emitter/event"
+	"eth-cron/event"
 	"github.com/go-redis/redis/v8"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
