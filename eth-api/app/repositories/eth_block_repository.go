@@ -1,47 +1,234 @@
 package repositories
 
 import (
+	"context"
 	"eth-api/app/models"
-	"gorm.io/gorm"
+	"eth-api/pkg/queue_helper/connector"
+	"fmt"
+	"github.com/go-redis/redis/v8"
+	"github.com/mitchellh/mapstructure"
+	amqp "github.com/rabbitmq/amqp091-go"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"log"
+	"math"
+	"math/rand"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type EthBlockRepository interface {
-	GetEthBlockByNumber(blockNumber string) (*models.EthBlock, error)
-	CreateEthBlock(createEthBlockDto models.CreateEthBlockDto) (*models.EthBlock, error)
+	GetEthBlockByIdentifier(identifier string, identifierType string) (*models.BlockDetails, error)
 }
 
 type ethBlockRepository struct {
-	db *gorm.DB
+	mongoClient *mongo.Client
+	redisClient *redis.Client
+	queueHost   string
+	queueName   string
 }
 
-func NewEthBlockRepository(db *gorm.DB) EthBlockRepository {
+func NewEthBlockRepository(mongoClient *mongo.Client, redisClient *redis.Client, queueHost string, queueName string) EthBlockRepository {
+
 	return &ethBlockRepository{
-		db: db,
+		mongoClient: mongoClient,
+		redisClient: redisClient,
+		queueHost:   queueHost,
+		queueName:   queueName,
 	}
 }
 
-func (ebr *ethBlockRepository) GetEthBlockByNumber(blockNumber string) (*models.EthBlock, error) {
-	var ethBlock models.EthBlock
-	err := ebr.db.Where("block_number = ?", blockNumber).First(&ethBlock).Error
-	if err != nil {
-		//if gorm.IsRecordNotFoundError(err) {
-		//	return nil, err
-		//}
-		return nil, err
+func (ebr *ethBlockRepository) GetEthBlockByIdentifier(identifier string, identifierType string) (*models.BlockDetails, error) {
+
+	mongoDb := "eth_blocks"
+	mongoCollection := "eth_blocks"
+
+	mongoField := "number"
+	redisCollection := "eth_blocks_by_number"
+
+	if identifierType == "hash" {
+		mongoField = "hash"
+		redisCollection = "eth_blocks_by_hash"
 	}
-	return &ethBlock, nil
+
+	blockDetails, err := ebr.getEthBlockFromRedis(identifier, redisCollection)
+
+	if err != nil || !ebr.isBlockValid(blockDetails) {
+		blockDetails, err = ebr.getEthBlockFromMongo(identifier, mongoField, mongoDb, mongoCollection)
+
+		if err != nil || !ebr.isBlockValid(blockDetails) {
+			blockDetails, err = ebr.getEthBlockFromApi(identifier, identifierType)
+
+			if err != nil || !ebr.isBlockValid(blockDetails) {
+				return nil, nil
+			}
+		}
+	}
+
+	return nil, nil
 }
 
-func (ebr *ethBlockRepository) CreateEthBlock(createEthBlockDto models.CreateEthBlockDto) (*models.EthBlock, error) {
-	ethBlock := models.EthBlock{
-		BlockNumber: createEthBlockDto.BlockNumber,
-		BlockHash:   createEthBlockDto.BlockHash,
-	}
+func (ebr *ethBlockRepository) getEthBlockFromRedis(identifier string, collectionName string) (*models.BlockDetails, error) {
+	var key strings.Builder
+	key.WriteString(collectionName)
+	key.WriteString(":")
+	key.WriteString(identifier)
 
-	err := ebr.db.Create(&ethBlock).Error
+	log.Printf("API::getEthBlockFromRedis::key: %v;", key)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel() // Make sure to cancel the context when you are done to release resources
+
+	res, err := ebr.redisClient.HGetAll(ctx, key.String()).Result()
+
 	if err != nil {
+		log.Printf("ERROR::API::getEthBlockFromRedis::res::err: %v;", err)
 		return nil, err
 	}
 
-	return &ethBlock, nil
+	log.Printf("API::getEthBlockFromRedis::res: %v", res)
+
+	blockDetails := &models.BlockDetails{}
+	err = mapstructure.Decode(res, blockDetails)
+
+	if err != nil {
+		log.Printf("ERROR::API::getEthBlockFromRedis::blockDetails::err: %v;", err)
+		return nil, err
+	}
+
+	log.Printf("API::getEthBlockFromRedis::blockDetails: %v", blockDetails)
+
+	return blockDetails, nil
+}
+
+func (ebr *ethBlockRepository) getEthBlockFromMongo(identifier string, identifierType string, dbName string, collectionName string) (*models.BlockDetails, error) {
+	var res models.BlockDetails
+	collection := ebr.mongoClient.Database(dbName).Collection(collectionName)
+	filter := bson.M{identifierType: identifier}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := collection.FindOne(ctx, filter).Decode(&res)
+
+	if err != nil {
+		log.Printf("ERROR::API::getEthBlockFromMongo::res::err: %v;", err)
+		return nil, err
+	}
+
+	log.Printf("API::getEthBlockFromMongo::res: %v;", res)
+
+	return &res, nil
+}
+
+func (ebr *ethBlockRepository) getEthBlockFromApi(identifier string, identifierType string) (*models.BlockDetails, error) {
+	conn, err := connector.ConnectToQueue(ebr.queueHost)
+	if err != nil {
+		log.Printf("%v\n", err)
+		return nil, err
+	}
+	defer conn.Close()
+
+	ch, err := conn.Channel()
+	if err != nil {
+		log.Printf("ERROR::API::getEthBlockFromApi::ch::err: %v\n", err)
+	}
+	defer ch.Close()
+
+	replyToQueue, err := ch.QueueDeclare(
+		"",
+		false,
+		false,
+		true,
+		false,
+		nil,
+	)
+	if err != nil {
+		log.Printf("ERROR::API::getEthBlockFromApi::replyToQueue::err: %v\n", err)
+	}
+
+	msgs, err := ch.Consume(
+		replyToQueue.Name,
+		"",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		log.Printf("ERROR::API::getEthBlockFromApi::msgs::err: %v\n", err)
+	}
+
+	correlationId := strconv.Itoa(rand.Int())
+
+	blockIdentifier := models.BlockIdentifier{
+		Identifier:     identifier,
+		IdentifierType: identifierType,
+	}
+	blockIdentifierStr := fmt.Sprintf("%+v", blockIdentifier)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err = ch.PublishWithContext(ctx,
+		"",
+		ebr.queueName,
+		false,
+		false,
+		amqp.Publishing{
+			ContentType:   "text/plain",
+			CorrelationId: correlationId,
+			ReplyTo:       replyToQueue.Name,
+			Body:          []byte(blockIdentifierStr),
+		})
+	if err != nil {
+		log.Printf("ERROR::API::getEthBlockFromApi::ch::err: %v\n", err)
+	}
+
+	select {
+	case d := <-msgs:
+		if d.CorrelationId == correlationId {
+			log.Printf("API::getEthBlockFromApi::d.Body: %v\n", string(d.Body))
+			return nil, nil
+		}
+	case <-time.After(5 * time.Second):
+		log.Printf("ERROR:EthEmitter:getEthBlockFromApi:timeout\n")
+	}
+
+	return nil, nil
+}
+
+func (ebr *ethBlockRepository) connectToQueue() (*amqp.Connection, error) {
+	var counts int64
+	var backOff = 1 * time.Second
+	var connection *amqp.Connection
+
+	for {
+		c, err := amqp.Dial(ebr.queueHost)
+		if err != nil {
+			fmt.Println("RabbitMQ not yet ready...")
+			counts++
+		} else {
+			connection = c
+			break
+		}
+
+		if counts > 5 {
+			fmt.Println(err)
+			return nil, err
+		}
+
+		backOff = time.Duration(math.Pow(float64(counts), 2)) * time.Second
+		log.Println("backing off...")
+		time.Sleep(backOff)
+		continue
+	}
+
+	return connection, nil
+}
+
+func (ebr *ethBlockRepository) isBlockValid(block *models.BlockDetails) bool {
+	return block != nil && block.Number != ""
 }

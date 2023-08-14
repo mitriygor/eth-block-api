@@ -1,11 +1,13 @@
 version: '3'
 services:
 
-  api:
+  eth-api:
     build:
       context: ./../eth-api
       dockerfile: ./../eth-api/eth-api.dockerfile
     restart: always
+    ports:
+      - "3000:3000"
     deploy:
       mode: replicated
       replicas: 1
@@ -14,45 +16,63 @@ services:
     depends_on:
       - redis
       - mongo
-      - rabbitmq
+      - queue-for-api
     sysctls:
       - net.ipv4.ip_local_port_range=1024 65535
       - net.ipv4.tcp_tw_reuse=1
 
 
-  emitter:
+  eth-cron:
     build:
-      context: ./../eth-emitter
-      dockerfile: ./../eth-emitter/eth-emitter.dockerfile
+      context: ./../eth-cron
+      dockerfile: ./../eth-cron/eth-cron.dockerfile
     restart: always
     deploy:
       mode: replicated
       replicas: 1
     volumes:
-      - ./../eth-emitter:/app
+      - ./../eth-cron:/app
     depends_on:
       - redis
       - mongo
-      - rabbitmq
+      - queue-for-storage
     sysctls:
       - net.ipv4.ip_local_port_range=1024 65535
       - net.ipv4.tcp_tw_reuse=1
 
 
-  listener:
+  eth-store:
     build:
-      context: ./../eth-listener
-      dockerfile: ./../eth-listener/eth-listener.dockerfile
+      context: ./../eth-store
+      dockerfile: ./../eth-store/eth-store.dockerfile
     restart: always
     deploy:
       mode: replicated
       replicas: 1
     volumes:
-      - ./../eth-listener:/app
+      - ./../eth-store:/app
     depends_on:
       - redis
       - mongo
-      - rabbitmq
+      - queue-for-storage
+    sysctls:
+      - net.ipv4.ip_local_port_range=1024 65535
+      - net.ipv4.tcp_tw_reuse=1
+
+
+  eth-req:
+    build:
+      context: ./../eth-req
+      dockerfile: ./../eth-req/eth-req.dockerfile
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ./../eth-req:/app
+    depends_on:
+      - queue-for-api
+      - queue-for-storage
     sysctls:
       - net.ipv4.ip_local_port_range=1024 65535
       - net.ipv4.tcp_tw_reuse=1
@@ -79,7 +99,21 @@ services:
       - ./.db-data/mongodb/:/data/db
 
 
-  rabbitmq:
+  queue-for-api:
+    image: 'rabbitmq:3-management'
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ./.db-data/queue-for-api/:/var/lib/rabbitmq/
+    environment:
+      - RABBITMQ_CHANNEL_MAX=10000000
+
+
+  queue-for-storage:
     image: 'rabbitmq:3-management'
     ports:
       - "5672:5672"
@@ -88,6 +122,6 @@ services:
       mode: replicated
       replicas: 1
     volumes:
-      - ./.db-data/rabbitmq/:/var/lib/rabbitmq/
+      - ./.db-data/queue-for-storage/:/var/lib/rabbitmq/
     environment:
       - RABBITMQ_CHANNEL_MAX=10000000

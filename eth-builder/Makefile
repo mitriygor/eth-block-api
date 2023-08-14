@@ -14,6 +14,3 @@ rerun: purge run
 
 stop:
 	docker-compose down
-
-
-

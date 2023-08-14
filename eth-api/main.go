@@ -2,24 +2,33 @@ package main
 
 import (
 	"eth-api/app"
-	"fmt"
-	"gorm.io/gorm"
+	"github.com/joho/godotenv"
+	"log"
+	"os"
 )
 
-// EthBlock model for GORM
-type EthBlock struct {
-	gorm.Model
-	BlockNumber uint64 `gorm:"uniqueIndex;not null"`
-	BlockHash   string `gorm:"uniqueIndex;not null"`
-}
-
 func main() {
-	fmt.Println("************** Hi A!dfsdfsdfsdfPI **************")
-	app := app.NewApp()
+	err := godotenv.Load()
 
-	// Start the server
-	err := app.Listen(":3000")
 	if err != nil {
-		panic(err)
+		log.Printf("ERROR::API::Error loading .env file: %v\n", err)
+	}
+
+	redisHost := os.Getenv("REDIS_HOST")
+
+	mongoUrl := os.Getenv("MONGO_URL")
+	mongoUser := os.Getenv("MONGO_INITDB_ROOT_USERNAME")
+	mongoPassword := os.Getenv("MONGO_INITDB_ROOT_PASSWORD")
+
+	queueForApi := os.Getenv("QUEUE_FOR_API")
+	queueForApiName := os.Getenv("QUEUE_FOR_API_NAME")
+
+	port := os.Getenv("PORT")
+
+	app := app.NewApp(redisHost, mongoUrl, mongoUser, mongoPassword, queueForApi, queueForApiName)
+
+	err = app.Listen(":" + port)
+	if err != nil {
+		log.Printf("ERROR::API::Error launch server: %v\n", err)
 	}
 }

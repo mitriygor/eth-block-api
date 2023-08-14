@@ -2,7 +2,7 @@ root = "."
 tmp_dir = ".tmp"
 
 [build]
-cmd = "go build -o ./.tmp/main ./"
+cmd = "go build -o ./.tmp/main ./cmd/api"
 pre_build = "if [ ! -d ./.tmp ]; then mkdir ./.tmp; fi && cp ./.env ./.tmp/.env"
 bin = ".tmp/main"
 full_bin = "APP_ENV=dev APP_USER=air ./.tmp/main"

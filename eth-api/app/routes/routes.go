@@ -6,11 +6,5 @@ import (
 )
 
 func SetupRoutes(app *fiber.App, handler *handlers.EthBlockHandler) {
-	app.Get("/eth-blocks/:blockNumber", handler.GetEthBlockByNumberHandler)
-	app.Post("/eth-blocks", handler.CreateEthBlockHandler)
+	app.Get("/eth-blocks/:blockIdentifier", handler.GetBlockByIdentifierHandler)
 }
-
-//eth_blockNumber — Returns the number of most recent block.
-//eth_getBlockByNumber — Returns information about a block by block number.
-//eth_getTransactionByHash — Returns the information about a transaction requested by transaction hash.
-//eth_getLogs — Returns an array of all logs matching a given filter object.

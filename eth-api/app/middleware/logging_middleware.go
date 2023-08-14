@@ -11,7 +11,6 @@ func LoggingMiddleware(c *fiber.Ctx) error {
 
 	err := c.Next()
 
-	// Logging
 	log.Printf("%s - %s - %s", c.IP(), c.Method(), c.Path(), time.Since(start))
 
 	return err
