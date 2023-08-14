@@ -1,4 +1,4 @@
-version: '3'
+version: '3.4'
 services:
 
   eth-api:
@@ -15,7 +15,7 @@ services:
       - ./../eth-api:/app
     depends_on:
       - redis
-      - mongo
+      - mongo-replica
       - queue-for-api
     sysctls:
       - net.ipv4.ip_local_port_range=1024 65535
@@ -88,7 +88,9 @@ services:
 
 
   mongo:
-    image: 'mongo:4.2.16-bionic'
+    build:
+      context: ./
+      dockerfile: ./mongo.dockerfile
     ports:
       - "27017:27017"
     environment:
@@ -97,6 +99,30 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: password123
     volumes:
       - ./.db-data/mongodb/:/data/db
+      - ./mongodb-keyfile:/opt/keyfile/mongodb-keyfile
+    depends_on:
+      mongo-replica:
+        condition: service_healthy
+    command: --replSet mongoReplicaSet2 --keyFile /opt/keyfile/mongodb-keyfile
+
+
+  mongo-replica:
+    image: 'mongo:4.2.16-bionic'
+    ports:
+      - "27018:27017"
+    environment:
+      MONGO_INITDB_DATABASE: eth_blocks
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+    volumes:
+      - ./.db-data/mongodb-replica/:/data/db
+      - ./mongodb-keyfile:/opt/keyfile/mongodb-keyfile
+    command: --replSet mongoReplicaSet2 --keyFile /opt/keyfile/mongodb-keyfile
+    healthcheck:
+      test: [ "CMD", "mongo", "-u", "admin", "-p", "password123", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 10s
+      retries: 3
 
 
   queue-for-api:
