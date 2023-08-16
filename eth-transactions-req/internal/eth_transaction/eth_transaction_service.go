@@ -58,7 +58,7 @@ func (ebs *ethTransactionService) GetEthTransaction(hash string) (*EthTransactio
 
 	log.Printf("TRANSACTIONS-REQ::GetEthTransaction::et: %v\n", et)
 
-	//ebs.ethTransactionRepo.PushEthTransaction(result.Result)
+	ebs.ethTransactionRepo.PushEthTransaction(result.Result)
 
 	return &et, nil
 }

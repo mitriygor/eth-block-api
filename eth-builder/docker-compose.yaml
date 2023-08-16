@@ -23,53 +23,33 @@ services:
       - net.ipv4.tcp_tw_reuse=1
 
 
-  eth-cron:
+#  eth-blocks-cron:
+#    build:
+#      context: ./../eth-blocks-cron
+#      dockerfile: ./../eth-blocks-cron/eth-blocks-cron.dockerfile
+#    restart: always
+#    deploy:
+#      mode: replicated
+#      replicas: 1
+#    volumes:
+#      - ./../eth-blocks-cron:/app
+#    depends_on:
+#      - redis
+#      - queue-for-eth-blocks-storing
+#    sysctls:
+#      - net.ipv4.ip_local_port_range=1024 65535
+#      - net.ipv4.tcp_tw_reuse=1
+
+  eth-blocks-req:
     build:
-      context: ./../eth-cron
-      dockerfile: ./../eth-cron/eth-cron.dockerfile
+      context: ./../eth-blocks-req
+      dockerfile: ./../eth-blocks-req/eth-blocks-req.dockerfile
     restart: always
     deploy:
       mode: replicated
       replicas: 1
     volumes:
-      - ./../eth-cron:/app
-    depends_on:
-      - redis
-      - queue-for-eth-blocks-storing
-    sysctls:
-      - net.ipv4.ip_local_port_range=1024 65535
-      - net.ipv4.tcp_tw_reuse=1
-
-
-  eth-store:
-    build:
-      context: ./../eth-store
-      dockerfile: ./../eth-store/eth-store.dockerfile
-    restart: always
-    deploy:
-      mode: replicated
-      replicas: 1
-    volumes:
-      - ./../eth-store:/app
-    depends_on:
-      - redis
-      - mongo-for-eth-blocks-writing
-      - queue-for-eth-blocks-storing
-    sysctls:
-      - net.ipv4.ip_local_port_range=1024 65535
-      - net.ipv4.tcp_tw_reuse=1
-
-
-  eth-req:
-    build:
-      context: ./../eth-req
-      dockerfile: ./../eth-req/eth-req.dockerfile
-    restart: always
-    deploy:
-      mode: replicated
-      replicas: 1
-    volumes:
-      - ./../eth-req:/app
+      - ./../eth-blocks-req:/app
     depends_on:
       - queue-for-eth-blocks-fetching
       - queue-for-eth-blocks-storing
@@ -78,31 +58,23 @@ services:
       - net.ipv4.tcp_tw_reuse=1
 
 
-  eth-transactions-req:
+  eth-blocks-store:
     build:
-      context: ./../eth-transactions-req
-      dockerfile: ./../eth-transactions-req/eth-transactions-req.dockerfile
+      context: ./../eth-blocks-req
+      dockerfile: ./../eth-blocks-req/eth-blocks-req.dockerfile
     restart: always
     deploy:
       mode: replicated
       replicas: 1
     volumes:
-      - ./../eth-transactions-req:/app
+      - ./../eth-blocks-req:/app
     depends_on:
-      - queue-for-eth-transactions-fetching
+      - redis
+      - mongo-for-eth-blocks-writing
       - queue-for-eth-blocks-storing
     sysctls:
       - net.ipv4.ip_local_port_range=1024 65535
       - net.ipv4.tcp_tw_reuse=1
-
-  redis:
-    image: 'redis:alpine'
-    ports:
-      - "6379:6379"
-    restart: always
-    volumes:
-      - ./.db-data/redis/:/data
-
 
   mongo-for-eth-blocks-writing:
     build:
@@ -116,11 +88,11 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: password123
     volumes:
       - ./.db-data/mongodb/:/data/db
-      - ./mongodb-keyfile:/opt/keyfile/mongodb-keyfile
-    depends_on:
-      mongo-for-eth-blocks-reading:
-        condition: service_healthy
-    command: --replSet mongoReplicaSet2 --keyFile /opt/keyfile/mongodb-keyfile
+  #      - ./mongodb-keyfile:/opt/keyfile/mongodb-keyfile
+  #    depends_on:
+  #      mongo-for-eth-blocks-reading:
+  #        condition: service_healthy
+  #    command: --replSet mongoReplicaSet2 --keyFile /opt/keyfile/mongodb-keyfile
 
 
   mongo-for-eth-blocks-reading:
@@ -133,25 +105,13 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: password123
     volumes:
       - ./.db-data/mongodb-replica/:/data/db
-      - ./mongodb-keyfile:/opt/keyfile/mongodb-keyfile
-    command: --replSet mongoReplicaSet2 --keyFile /opt/keyfile/mongodb-keyfile
-    healthcheck:
-      test: [ "CMD", "mongo", "-u", "admin", "-p", "password123", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping')" ]
-      interval: 10s
-      timeout: 10s
-      retries: 3
-
-
-  mongo-for-eth-transactions-reading:
-    image: 'mongo:4.2.16-bionic'
-    ports:
-      - "27019:27017"
-    environment:
-      MONGO_INITDB_DATABASE: eth_transactions
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: password123
-    volumes:
-      - ./.db-data/mongo-for-eth-transactions-reading/:/data/db
+  #      - ./mongodb-keyfile:/opt/keyfile/mongodb-keyfile
+  #    command: --replSet mongoReplicaSet2 --keyFile /opt/keyfile/mongodb-keyfile
+  #    healthcheck:
+  #      test: [ "CMD", "mongo", "-u", "admin", "-p", "password123", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping')" ]
+  #      interval: 10s
+  #      timeout: 10s
+  #      retries: 3
 
 
   queue-for-eth-blocks-fetching:
@@ -181,6 +141,79 @@ services:
     environment:
       - RABBITMQ_CHANNEL_MAX=10000000
 
+
+  eth-transactions-req:
+    build:
+      context: ./../eth-transactions-req
+      dockerfile: ./../eth-transactions-req/eth-transactions-req.dockerfile
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ./../eth-transactions-req:/app
+    depends_on:
+      - queue-for-eth-transactions-fetching
+      - queue-for-eth-transactions-storing
+    sysctls:
+      - net.ipv4.ip_local_port_range=1024 65535
+      - net.ipv4.tcp_tw_reuse=1
+
+
+  eth-transactions-store:
+    build:
+      context: ./../eth-transactions-store
+      dockerfile: ./../eth-transactions-store/eth-transactions-store.dockerfile
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ./../eth-transactions-store:/app
+    depends_on:
+      - queue-for-eth-transactions-storing
+      - mongo-for-eth-transactions-writing
+    sysctls:
+      - net.ipv4.ip_local_port_range=1024 65535
+      - net.ipv4.tcp_tw_reuse=1
+
+
+  mongo-for-eth-transactions-writing:
+    image: 'mongo:4.2.16-bionic'
+    ports:
+      - "27019:27017"
+    environment:
+      MONGO_INITDB_DATABASE: eth_transactions
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+    volumes:
+      - ./.db-data/mongo-for-eth-transactions-writing/:/data/db
+  #      - ./mongodb-keyfile:/opt/keyfile/mongodb-keyfile
+  #    depends_on:
+  #      mongo-for-eth-transactions-reading:
+  #        condition: service_healthy
+  #    command: --replSet mongoReplicaSet2 --keyFile /opt/keyfile/mongodb-keyfile
+
+
+  mongo-for-eth-transactions-reading:
+    image: 'mongo:4.2.16-bionic'
+    ports:
+      - "27020:27017"
+    environment:
+      MONGO_INITDB_DATABASE: eth_transactions
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+    volumes:
+      - ./.db-data/mongo-for-eth-transactions-reading/:/data/db
+  #      - ./mongodb-keyfile:/opt/keyfile/mongodb-keyfile
+  #    command: --replSet mongoReplicaSet2 --keyFile /opt/keyfile/mongodb-keyfile
+  #    healthcheck:
+  #      test: [ "CMD", "mongo", "-u", "admin", "-p", "password123", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping')" ]
+  #      interval: 10s
+  #      timeout: 10s
+  #      retries: 3
+
+
   queue-for-eth-transactions-fetching:
     image: 'rabbitmq:3-management'
     ports:
@@ -207,3 +240,12 @@ services:
       - ./.db-data/queue-for-eth-transactions-storing/:/var/lib/rabbitmq/
     environment:
       - RABBITMQ_CHANNEL_MAX=10000000
+
+
+  redis:
+    image: 'redis:alpine'
+    ports:
+      - "6379:6379"
+    restart: always
+    volumes:
+      - ./.db-data/redis/:/data
