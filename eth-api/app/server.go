@@ -13,9 +13,25 @@ import (
 	"log"
 )
 
-func NewApp(redisHost string, mongoUrl string, mongoUser string, mongoPassword string, queueForApi string, queueForApiName string) *fiber.App {
+type MongoCredentials struct {
+	Url      string
+	User     string
+	Password string
+}
 
-	mongoClient, err := mongo_helper.ConnectToMongo(mongoUrl, mongoUser, mongoPassword)
+type QueueCredentials struct {
+	Host string
+	Name string
+}
+
+func NewApp(redisHost string, ethBlockMongo MongoCredentials, ethTransactionMongo MongoCredentials, ethBlockQueue QueueCredentials, ethTransactionQueue QueueCredentials) *fiber.App {
+
+	ethBlockMongoClient, err := mongo_helper.ConnectToMongo(ethBlockMongo.Url, ethBlockMongo.User, ethBlockMongo.Password)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	ethTransactionMongoClient, err := mongo_helper.ConnectToMongo(ethTransactionMongo.Url, ethTransactionMongo.User, ethTransactionMongo.Password)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -26,20 +42,28 @@ func NewApp(redisHost string, mongoUrl string, mongoUser string, mongoPassword s
 		DB:       0,
 	})
 
-	handler := initEthBlockHandler(mongoClient, redisClient, queueForApi, queueForApiName)
+	ethBlockHandler := initEthBlockHandler(ethBlockMongoClient, redisClient, ethBlockQueue.Host, ethBlockQueue.Name)
+	ethTransactionHandler := initEthTransactionHandler(ethTransactionMongoClient, redisClient, ethTransactionQueue.Host, ethTransactionQueue.Name)
 
 	app := fiber.New()
 
 	app.Use(middleware.LoggingMiddleware)
 
-	routes.SetupRoutes(app, handler)
+	routes.SetupRoutes(app, ethBlockHandler, ethTransactionHandler)
 
 	return app
 }
 
-func initEthBlockHandler(mongoClient *mongo.Client, redisClient *redis.Client, queueForApi string, queueForApiName string) *handlers.EthBlockHandler {
-	ethBlockRepo := repositories.NewEthBlockRepository(mongoClient, redisClient, queueForApi, queueForApiName)
+func initEthBlockHandler(mongoClient *mongo.Client, redisClient *redis.Client, queueHost string, queueName string) *handlers.EthBlockHandler {
+	ethBlockRepo := repositories.NewEthBlockRepository(mongoClient, redisClient, queueHost, queueName)
 	ethBlockService := services.NewEthBlockService(ethBlockRepo)
 	ethBlockHandler := handlers.NewEthBlockHandler(ethBlockService)
 	return ethBlockHandler
+}
+
+func initEthTransactionHandler(mongoClient *mongo.Client, redisClient *redis.Client, queueHost string, queueName string) *handlers.EthTransactionHandler {
+	ethTransactionRepo := repositories.NewEthTransactionRepository(mongoClient, redisClient, queueHost, queueName)
+	ethTransactionService := services.NewEthTransactionService(ethTransactionRepo)
+	ethTransactionHandler := handlers.NewEthTransactionHandler(ethTransactionService)
+	return ethTransactionHandler
 }

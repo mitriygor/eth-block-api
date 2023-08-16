@@ -15,8 +15,9 @@ services:
       - ./../eth-api:/app
     depends_on:
       - redis
-      - mongo-replica
-      - queue-for-api
+      - mongo-for-eth-blocks-reading
+      - mongo-for-eth-transactions-reading
+      - queue-for-eth-blocks-fetching
     sysctls:
       - net.ipv4.ip_local_port_range=1024 65535
       - net.ipv4.tcp_tw_reuse=1
@@ -34,8 +35,7 @@ services:
       - ./../eth-cron:/app
     depends_on:
       - redis
-      - mongo
-      - queue-for-storage
+      - queue-for-eth-blocks-storing
     sysctls:
       - net.ipv4.ip_local_port_range=1024 65535
       - net.ipv4.tcp_tw_reuse=1
@@ -53,8 +53,8 @@ services:
       - ./../eth-store:/app
     depends_on:
       - redis
-      - mongo
-      - queue-for-storage
+      - mongo-for-eth-blocks-writing
+      - queue-for-eth-blocks-storing
     sysctls:
       - net.ipv4.ip_local_port_range=1024 65535
       - net.ipv4.tcp_tw_reuse=1
@@ -71,12 +71,29 @@ services:
     volumes:
       - ./../eth-req:/app
     depends_on:
-      - queue-for-api
-      - queue-for-storage
+      - queue-for-eth-blocks-fetching
+      - queue-for-eth-blocks-storing
     sysctls:
       - net.ipv4.ip_local_port_range=1024 65535
       - net.ipv4.tcp_tw_reuse=1
 
+
+  eth-transactions-req:
+    build:
+      context: ./../eth-transactions-req
+      dockerfile: ./../eth-transactions-req/eth-transactions-req.dockerfile
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ./../eth-transactions-req:/app
+    depends_on:
+      - queue-for-eth-transactions-fetching
+      - queue-for-eth-blocks-storing
+    sysctls:
+      - net.ipv4.ip_local_port_range=1024 65535
+      - net.ipv4.tcp_tw_reuse=1
 
   redis:
     image: 'redis:alpine'
@@ -87,7 +104,7 @@ services:
       - ./.db-data/redis/:/data
 
 
-  mongo:
+  mongo-for-eth-blocks-writing:
     build:
       context: ./
       dockerfile: ./mongo.dockerfile
@@ -101,12 +118,12 @@ services:
       - ./.db-data/mongodb/:/data/db
       - ./mongodb-keyfile:/opt/keyfile/mongodb-keyfile
     depends_on:
-      mongo-replica:
+      mongo-for-eth-blocks-reading:
         condition: service_healthy
     command: --replSet mongoReplicaSet2 --keyFile /opt/keyfile/mongodb-keyfile
 
 
-  mongo-replica:
+  mongo-for-eth-blocks-reading:
     image: 'mongo:4.2.16-bionic'
     ports:
       - "27018:27017"
@@ -125,7 +142,19 @@ services:
       retries: 3
 
 
-  queue-for-api:
+  mongo-for-eth-transactions-reading:
+    image: 'mongo:4.2.16-bionic'
+    ports:
+      - "27019:27017"
+    environment:
+      MONGO_INITDB_DATABASE: eth_transactions
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+    volumes:
+      - ./.db-data/mongo-for-eth-transactions-reading/:/data/db
+
+
+  queue-for-eth-blocks-fetching:
     image: 'rabbitmq:3-management'
     ports:
       - "5673:5672"
@@ -134,12 +163,12 @@ services:
       mode: replicated
       replicas: 1
     volumes:
-      - ./.db-data/queue-for-api/:/var/lib/rabbitmq/
+      - ./.db-data/queue-for-eth-blocks-fetching/:/var/lib/rabbitmq/
     environment:
       - RABBITMQ_CHANNEL_MAX=10000000
 
 
-  queue-for-storage:
+  queue-for-eth-blocks-storing:
     image: 'rabbitmq:3-management'
     ports:
       - "5672:5672"
@@ -148,6 +177,33 @@ services:
       mode: replicated
       replicas: 1
     volumes:
-      - ./.db-data/queue-for-storage/:/var/lib/rabbitmq/
+      - ./.db-data/queue-for-eth-blocks-storing/:/var/lib/rabbitmq/
+    environment:
+      - RABBITMQ_CHANNEL_MAX=10000000
+
+  queue-for-eth-transactions-fetching:
+    image: 'rabbitmq:3-management'
+    ports:
+      - "5674:5672"
+      - "15674:15672"
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ./.db-data/queue-for-eth-transactions-fetching/:/var/lib/rabbitmq/
+    environment:
+      - RABBITMQ_CHANNEL_MAX=10000000
+
+
+  queue-for-eth-transactions-storing:
+    image: 'rabbitmq:3-management'
+    ports:
+      - "5675:5672"
+      - "15675:15672"
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ./.db-data/queue-for-eth-transactions-storing/:/var/lib/rabbitmq/
     environment:
       - RABBITMQ_CHANNEL_MAX=10000000

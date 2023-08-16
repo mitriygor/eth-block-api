@@ -16,16 +16,41 @@ func main() {
 
 	redisHost := os.Getenv("REDIS_HOST")
 
-	mongoUrl := os.Getenv("MONGO_URL")
-	mongoUser := os.Getenv("MONGO_INITDB_ROOT_USERNAME")
-	mongoPassword := os.Getenv("MONGO_INITDB_ROOT_PASSWORD")
+	ethBlockMongoUrl := os.Getenv("ETH_BLOCK_MONGO_URL")
+	ethBlockMongoUser := os.Getenv("ETH_BLOCK_MONGO_USER")
+	ethBlockMongoPassword := os.Getenv("ETH_BLOCK_MONGO_PASSWORD")
+	ethBlockMongo := app.MongoCredentials{
+		Url:      ethBlockMongoUrl,
+		User:     ethBlockMongoUser,
+		Password: ethBlockMongoPassword,
+	}
 
-	queueForApi := os.Getenv("QUEUE_FOR_API")
-	queueForApiName := os.Getenv("QUEUE_FOR_API_NAME")
+	ethBlockQueueHost := os.Getenv("ETH_BLOCK_QUEUE_HOST")
+	ethBlockQueueName := os.Getenv("ETH_BLOCK_QUEUE_NAME")
+	ethBlockQueue := app.QueueCredentials{
+		Host: ethBlockQueueHost,
+		Name: ethBlockQueueName,
+	}
+
+	ethTransactionMongoUrl := os.Getenv("ETH_TRANSACTION_MONGO_URL")
+	ethTransactionMongoUser := os.Getenv("ETH_TRANSACTION_MONGO_USER")
+	ethTransactionMongoPassword := os.Getenv("ETH_TRANSACTION_MONGO_PASSWORD")
+	ethTransactionMongo := app.MongoCredentials{
+		Url:      ethTransactionMongoUrl,
+		User:     ethTransactionMongoUser,
+		Password: ethTransactionMongoPassword,
+	}
+
+	ethTransactionQueueHost := os.Getenv("ETH_TRANSACTION_QUEUE_HOST")
+	ethTransactionQueueName := os.Getenv("ETH_TRANSACTION_QUEUE_NAME")
+	ethTransactionQueue := app.QueueCredentials{
+		Host: ethTransactionQueueHost,
+		Name: ethTransactionQueueName,
+	}
 
 	port := os.Getenv("PORT")
 
-	app := app.NewApp(redisHost, mongoUrl, mongoUser, mongoPassword, queueForApi, queueForApiName)
+	app := app.NewApp(redisHost, ethBlockMongo, ethTransactionMongo, ethBlockQueue, ethTransactionQueue)
 
 	err = app.Listen(":" + port)
 	if err != nil {

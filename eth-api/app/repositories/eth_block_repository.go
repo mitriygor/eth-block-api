@@ -11,7 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"log"
-	"math"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -30,7 +29,6 @@ type ethBlockRepository struct {
 }
 
 func NewEthBlockRepository(mongoClient *mongo.Client, redisClient *redis.Client, queueHost string, queueName string) EthBlockRepository {
-
 	return &ethBlockRepository{
 		mongoClient: mongoClient,
 		redisClient: redisClient,
@@ -194,39 +192,10 @@ func (ebr *ethBlockRepository) getEthBlockFromApi(identifier string, identifierT
 			return nil, nil
 		}
 	case <-time.After(5 * time.Second):
-		log.Printf("ERROR:EthEmitter:getEthBlockFromApi:timeout\n")
+		log.Printf("ERROR:API:getEthBlockFromApi:timeout\n")
 	}
 
 	return nil, nil
-}
-
-func (ebr *ethBlockRepository) connectToQueue() (*amqp.Connection, error) {
-	var counts int64
-	var backOff = 1 * time.Second
-	var connection *amqp.Connection
-
-	for {
-		c, err := amqp.Dial(ebr.queueHost)
-		if err != nil {
-			fmt.Println("RabbitMQ not yet ready...")
-			counts++
-		} else {
-			connection = c
-			break
-		}
-
-		if counts > 5 {
-			fmt.Println(err)
-			return nil, err
-		}
-
-		backOff = time.Duration(math.Pow(float64(counts), 2)) * time.Second
-		log.Println("backing off...")
-		time.Sleep(backOff)
-		continue
-	}
-
-	return connection, nil
 }
 
 func (ebr *ethBlockRepository) isBlockValid(block *models.BlockDetails) bool {

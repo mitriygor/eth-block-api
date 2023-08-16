@@ -9,6 +9,8 @@ import (
 )
 
 func ConnectToQueue(host string) (*amqp.Connection, error) {
+	fmt.Printf("TRANSACTIONS-REQ::connectToQueue::host: %v\n", host)
+
 	var counts int64
 	var backOff = 1 * time.Second
 	var connection *amqp.Connection
@@ -16,10 +18,10 @@ func ConnectToQueue(host string) (*amqp.Connection, error) {
 	for {
 		c, err := amqp.Dial(host)
 		if err != nil {
-			fmt.Printf("ERROR::API::connectToQueue::err: %v\n", err)
+			fmt.Printf("ERROR::TRANSACTIONS-REQ::connectToQueue::err: %v\n", err)
 			counts++
 		} else {
-			fmt.Println("API::connectToQueue::CONNECTED")
+			fmt.Println("TRANSACTIONS-REQ::connectToQueue::CONNECTED")
 			connection = c
 			break
 		}
@@ -30,7 +32,7 @@ func ConnectToQueue(host string) (*amqp.Connection, error) {
 		}
 
 		backOff = time.Duration(math.Pow(float64(counts), 2)) * time.Second
-		log.Printf("API::connectToQueue::backOff: %v\n", backOff)
+		log.Printf("TRANSACTION-REQ::connectToQueue::backOff: %v\n", backOff)
 		time.Sleep(backOff)
 		continue
 	}
