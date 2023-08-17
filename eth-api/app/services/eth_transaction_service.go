@@ -32,5 +32,13 @@ func (ets *ethTransactionService) GetTransactionByHashService(hash string) (*mod
 }
 
 func (ets *ethTransactionService) GetTransactionsByAddressService(address string) ([]*models.EthTransaction, error) {
-	return nil, nil
+
+	log.Printf("API::GetTransactionsByAddressService:: address: %v\n", address)
+
+	transactions, err := ets.ethTransactionRepo.GetTransactionsByAddress(address)
+
+	log.Printf("API::GetTransactionsByAddressService:: err: %v\n", err)
+	log.Printf("API::GetTransactionsByAddressService::transactions: %v\n", transactions)
+
+	return transactions, err
 }

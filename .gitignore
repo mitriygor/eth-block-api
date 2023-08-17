@@ -306,6 +306,7 @@ packages/react-devtools-timeline/dist
 *.gz
 
 results
+assets/tmp
 tmp
 .tmp
 .db-data

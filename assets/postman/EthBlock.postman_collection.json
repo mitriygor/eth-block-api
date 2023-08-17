@@ -1,0 +1,213 @@
+{
+	"info": {
+		"_postman_id": "43b6672c-131c-4a8b-964d-aba1188a17e7",
+		"name": "EthBlock",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "7700049"
+	},
+	"item": [
+		{
+			"name": "3rd API",
+			"item": [
+				{
+					"name": "eth_blockNumber",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\":\"2.0\",\n    \"method\":\"eth_blockNumber\",\n    \"params\":[],\n    \"id\":0\n}"
+						},
+						"url": {
+							"raw": "{{URL}}/eth_blockNumber",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"eth_blockNumber"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "eth_getLogs",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\":\"2.0\",\n    \"method\":\"eth_getLogs\",\n    \"params\":[{\n        \"fromBlock\": \"0x110be7a\"\n    }],\n    \"id\":0\n}"
+						},
+						"url": {
+							"raw": "{{URL}}/eth_getLogs",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"eth_getLogs"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "eth_getBlockByNumber",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\":\"2.0\",\n    \"method\":\"eth_getBlockByNumber\",\n    \"params\":[\"0x110cfed\", false],\n    \"id\":0\n}"
+						},
+						"url": {
+							"raw": "{{URL}}/eth_getBlockByNumber",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"eth_getBlockByNumber"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "eth_getTransactionByHash",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\":\"2.0\",\n    \"method\":\"eth_getTransactionByHash\",\n    \"params\":[\"0x5a53ff76232b1fdc722583e0afd4f62a70dec6ae8e52347958a94b2957156144\"],\n    \"id\":0\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/eth_getTransactionByHash",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"eth_getTransactionByHash"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "API",
+			"item": [
+				{
+					"name": "/eth-blocks/hex",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{LOCAL}}/eth-blocks/0x110cfed",
+							"host": [
+								"{{LOCAL}}"
+							],
+							"path": [
+								"eth-blocks",
+								"0x110cfed"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/eth-transactions/:hash",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{LOCAL}}/eth-transactions/0x5a53ff76232b1fdc722583e0afd4f62a70dec6ae8e52347958a94b2957156144",
+							"host": [
+								"{{LOCAL}}"
+							],
+							"path": [
+								"eth-transactions",
+								"0x5a53ff76232b1fdc722583e0afd4f62a70dec6ae8e52347958a94b2957156144"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/eth-events/:address",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{LOCAL}}/eth-events/0x2cc846fff0b08fb3bffad71f53a60b4b6e6d6482",
+							"host": [
+								"{{LOCAL}}"
+							],
+							"path": [
+								"eth-events",
+								"0x2cc846fff0b08fb3bffad71f53a60b4b6e6d6482"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "URL",
+			"value": "https://mainnet.ethereum.validationcloud.io/v1/AbSszsdBad07WnGvmiW5v5_l8DDe1__yvd9mfZpZovY",
+			"type": "string"
+		},
+		{
+			"key": "LOCAL",
+			"value": "http://localhost:3000",
+			"type": "string"
+		}
+	]
+}

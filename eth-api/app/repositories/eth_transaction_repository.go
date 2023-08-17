@@ -63,17 +63,21 @@ func (etr *ethTransactionRepository) GetTransactionByHash(hash string) (*models.
 }
 
 func (etr *ethTransactionRepository) GetTransactionsByAddress(address string) ([]*models.EthTransaction, error) {
+
+	mongoDb := "eth_transactions"
+	mongoCollection := "eth_transactions"
+
 	transactions, err := etr.getEthTransactionsFromRedis(address)
 
 	if err != nil || !etr.isTransactionsListValid(transactions) {
-		transactions, err = etr.getEthTransactionsFromMongo(address)
+		transactions, err = etr.getEthTransactionsFromMongo(address, mongoDb, mongoCollection)
 
 		if err != nil || !etr.isTransactionsListValid(transactions) {
-			return nil, nil
+			return nil, errors.New("transactions not found")
 		}
 	}
 
-	return nil, nil
+	return transactions, nil
 }
 
 func (etr *ethTransactionRepository) getEthTransactionFromRedis(hash string) (*models.EthTransaction, error) {
@@ -225,11 +229,44 @@ func (etr *ethTransactionRepository) getEthTransactionFromApi(hash string) (*mod
 }
 
 func (etr *ethTransactionRepository) getEthTransactionsFromRedis(address string) ([]*models.EthTransaction, error) {
+
 	return nil, nil
 }
 
-func (etr *ethTransactionRepository) getEthTransactionsFromMongo(address string) ([]*models.EthTransaction, error) {
-	return nil, nil
+func (etr *ethTransactionRepository) getEthTransactionsFromMongo(address string, dbName string, collectionName string) ([]*models.EthTransaction, error) {
+	collection := etr.mongoClient.Database(dbName).Collection(collectionName)
+	filter := bson.D{{"accessList.address", address}}
+
+	log.Printf("API::getEthTransactionsFromMongo::address: %v\n", address)
+	log.Printf("API::getEthTransactionsFromMongo::dbName: %v\n", dbName)
+	log.Printf("API::getEthTransactionsFromMongo::collectionName: %v\n", collectionName)
+	log.Printf("API::getEthTransactionsFromMongo::collection: %v\n", collection)
+	log.Printf("API::getEthTransactionsFromMongo::filter: %v\n", filter)
+
+	cur, err := collection.Find(context.TODO(), filter)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer cur.Close(context.TODO())
+
+	var results []*models.EthTransaction
+
+	// Iterate through the results
+	for cur.Next(context.TODO()) {
+		var result models.EthTransaction
+		err := cur.Decode(&result)
+		if err != nil {
+			log.Printf("ERROR::API::getEthTransactionsFromMongo::cur::err: %v\n", err)
+		}
+		results = append(results, &result)
+	}
+
+	if err := cur.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	return results, nil
 }
 
 func (ebr *ethTransactionRepository) isTransactionValid(transaction *models.EthTransaction) bool {

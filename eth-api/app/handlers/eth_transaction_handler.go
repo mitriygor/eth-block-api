@@ -38,6 +38,8 @@ func (h *EthTransactionHandler) GetTransactionByHashHandler(c *fiber.Ctx) error 
 }
 
 func (h *EthTransactionHandler) GetTransactionsByAddressHandler(c *fiber.Ctx) error {
+
+	log.Printf("API::INFO::GetTransactionsByAddressHandler::address: %v\n", c.Params("address"))
 	address := c.Params("address")
 
 	events, err := h.EthTransactionService.GetTransactionsByAddressService(address)
