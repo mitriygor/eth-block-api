@@ -22,23 +22,22 @@ func NewEthTransactionService(repo repositories.EthTransactionRepository) EthTra
 }
 
 func (ets *ethTransactionService) GetTransactionByHashService(hash string) (*models.EthTransaction, error) {
-	log.Printf("API::GetTransactionByHashService:: hash: %v\n", hash)
+	log.Printf("eth-api::GetTransactionByHashService:: hash: %v\n", hash)
 	et, err := ets.ethTransactionRepo.GetTransactionByHash(hash)
 
-	log.Printf("API::GetTransactionByHashService::err: %v\n", err)
-	log.Printf("API::GetTransactionByHashService::et: %v\n", et)
+	log.Printf("eth-api::GetTransactionByHashService::err: %v\n", err)
+	log.Printf("eth-api::GetTransactionByHashService::et: %v\n", et)
 
 	return et, err
 }
 
 func (ets *ethTransactionService) GetTransactionsByAddressService(address string) ([]*models.EthTransaction, error) {
-
-	log.Printf("API::GetTransactionsByAddressService:: address: %v\n", address)
+	log.Printf("eth-api::GetTransactionsByAddressService:: address: %v\n", address)
 
 	transactions, err := ets.ethTransactionRepo.GetTransactionsByAddress(address)
 
-	log.Printf("API::GetTransactionsByAddressService:: err: %v\n", err)
-	log.Printf("API::GetTransactionsByAddressService::transactions: %v\n", transactions)
+	log.Printf("eth-api::GetTransactionsByAddressService:: err: %v\n", err)
+	log.Printf("eth-api::GetTransactionsByAddressService::transactions: %v\n", transactions)
 
 	return transactions, err
 }

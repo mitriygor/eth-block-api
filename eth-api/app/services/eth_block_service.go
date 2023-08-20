@@ -9,6 +9,7 @@ import "eth-api/app/models"
 
 type EthBlockService interface {
 	GetBlockByIdentifierService(hash string) (*models.BlockDetails, error)
+	GetLatestEthBlocks() ([]*models.BlockDetails, error)
 }
 
 type ethBlockService struct {
@@ -21,29 +22,37 @@ func NewEthBlockService(repo repositories.EthBlockRepository) EthBlockService {
 	}
 }
 
+func (ebs *ethBlockService) GetLatestEthBlocks() ([]*models.BlockDetails, error) {
+
+	log.Printf("eth-api:GetLatestEthBlocks")
+
+	ebs.ethBlockRepo.GetLatestEthBlocks()
+	return nil, nil
+}
+
 func (ebs *ethBlockService) GetBlockByIdentifierService(blockIdentifier string) (*models.BlockDetails, error) {
 
-	log.Printf("API::GetBlockByIdentifierService: %v", blockIdentifier)
+	log.Printf("eth-api::GetBlockByIdentifierService: %v\n", blockIdentifier)
+
+	var bd *models.BlockDetails
+	var err error
+
+	identifierType := "hash"
 
 	if eth_block_helper.IsInt(blockIdentifier) {
 		num := eth_block_helper.StringToInt(blockIdentifier)
-		hex := eth_block_helper.IntToHex(num)
-
-		log.Printf("API::GetBlockByIdentifierService::number::hex: %v", hex)
-
-		ebs.ethBlockRepo.GetEthBlockByIdentifier(hex, "number")
-		return nil, nil
+		blockIdentifier = eth_block_helper.IntToHex(num)
+		identifierType = "number"
 	} else if eth_block_helper.IsHex(blockIdentifier) {
-
-		log.Printf("API::GetBlockByIdentifierService::number::blockIdentifier: %v", blockIdentifier)
-
-		ebs.ethBlockRepo.GetEthBlockByIdentifier(blockIdentifier, "number")
-		return nil, nil
-	} else {
-		log.Printf("API::GetBlockByIdentifierService::hash::blockIdentifier: %v", blockIdentifier)
-		ebs.ethBlockRepo.GetEthBlockByIdentifier(blockIdentifier, "hash")
-		return nil, nil
+		identifierType = "number"
 	}
 
-	return nil, nil
+	log.Printf("eth-api::GetBlockByIdentifierService:::identifierType: %v\n", identifierType)
+
+	bd, err = ebs.ethBlockRepo.GetEthBlockByIdentifier(blockIdentifier, identifierType)
+
+	log.Printf("eth-api::GetBlockByIdentifierService:::bd: %v\n", bd)
+	log.Printf("eth-api::GetBlockByIdentifierService:::err: %v\n", err)
+
+	return bd, err
 }

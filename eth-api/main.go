@@ -11,49 +11,49 @@ func main() {
 	err := godotenv.Load()
 
 	if err != nil {
-		log.Printf("ERROR::API::Error loading .env file: %v\n", err)
+		log.Printf("eth-api::ERROR::Error loading .env file: %v\n", err)
 	}
 
-	redisHost := os.Getenv("REDIS_HOST")
+	redisHost := os.Getenv("ETH_REDIS")
 
-	ethBlockMongoUrl := os.Getenv("ETH_BLOCK_MONGO_URL")
-	ethBlockMongoUser := os.Getenv("ETH_BLOCK_MONGO_USER")
-	ethBlockMongoPassword := os.Getenv("ETH_BLOCK_MONGO_PASSWORD")
-	ethBlockMongo := app.MongoCredentials{
-		Url:      ethBlockMongoUrl,
-		User:     ethBlockMongoUser,
-		Password: ethBlockMongoPassword,
+	ethBlocksMongo := os.Getenv("ETH_BLOCKS_MONGO")
+	ethBlocksMongoUser := os.Getenv("ETH_BLOCKS_MONGO_USER")
+	ethBlocksMongoPassword := os.Getenv("ETH_BLOCKS_MONGO_PASSWORD")
+	ethBlocksMongoCredentials := app.MongoCredentials{
+		Url:      ethBlocksMongo,
+		User:     ethBlocksMongoUser,
+		Password: ethBlocksMongoPassword,
 	}
 
-	ethBlockQueueHost := os.Getenv("ETH_BLOCK_QUEUE_HOST")
-	ethBlockQueueName := os.Getenv("ETH_BLOCK_QUEUE_NAME")
-	ethBlockQueue := app.QueueCredentials{
-		Host: ethBlockQueueHost,
-		Name: ethBlockQueueName,
+	ethBlocksRequesterQueue := os.Getenv("ETH_BLOCKS_REQUESTER_QUEUE")
+	ethBlocksRequesterQueueName := os.Getenv("ETH_BLOCKS_REQUESTER_QUEUE_NAME")
+	ethBlocksQueueCredentials := app.QueueCredentials{
+		Host: ethBlocksRequesterQueue,
+		Name: ethBlocksRequesterQueueName,
 	}
 
-	ethTransactionMongoUrl := os.Getenv("ETH_TRANSACTION_MONGO_URL")
-	ethTransactionMongoUser := os.Getenv("ETH_TRANSACTION_MONGO_USER")
-	ethTransactionMongoPassword := os.Getenv("ETH_TRANSACTION_MONGO_PASSWORD")
+	ethTransactionsMongo := os.Getenv("ETH_TRANSACTIONS_MONGO")
+	ethTransactionsMongoUser := os.Getenv("ETH_TRANSACTIONS_MONGO_USER")
+	ethTransactionsMongoPassword := os.Getenv("ETH_TRANSACTIONS_MONGO_PASSWORD")
 	ethTransactionMongo := app.MongoCredentials{
-		Url:      ethTransactionMongoUrl,
-		User:     ethTransactionMongoUser,
-		Password: ethTransactionMongoPassword,
+		Url:      ethTransactionsMongo,
+		User:     ethTransactionsMongoUser,
+		Password: ethTransactionsMongoPassword,
 	}
 
-	ethTransactionQueueHost := os.Getenv("ETH_TRANSACTION_QUEUE_HOST")
-	ethTransactionQueueName := os.Getenv("ETH_TRANSACTION_QUEUE_NAME")
-	ethTransactionQueue := app.QueueCredentials{
-		Host: ethTransactionQueueHost,
-		Name: ethTransactionQueueName,
+	ethTransactionsRequesterQueue := os.Getenv("ETH_TRANSACTIONS_REQUESTER_QUEUE")
+	ethTransactionsRequesterQueueName := os.Getenv("ETH_TRANSACTIONS_REQUESTER_QUEUE_NAME")
+	ethTransactionsRequesterCredentials := app.QueueCredentials{
+		Host: ethTransactionsRequesterQueue,
+		Name: ethTransactionsRequesterQueueName,
 	}
 
 	port := os.Getenv("PORT")
 
-	app := app.NewApp(redisHost, ethBlockMongo, ethTransactionMongo, ethBlockQueue, ethTransactionQueue)
+	app := app.NewApp(redisHost, ethBlocksMongoCredentials, ethTransactionMongo, ethBlocksQueueCredentials, ethTransactionsRequesterCredentials)
 
 	err = app.Listen(":" + port)
 	if err != nil {
-		log.Printf("ERROR::API::Error launch server: %v\n", err)
+		log.Printf("eth-api::ERROR::Error launch server: %v\n", err)
 	}
 }

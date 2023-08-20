@@ -3,6 +3,7 @@ package eth_block_helper
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -13,14 +14,16 @@ func IsInt(str string) bool {
 }
 
 func IsHex(s string) bool {
-	_, err := strconv.ParseUint(s, 16, 64)
-	return err == nil
+	pattern := `^0x[0-9a-fA-F]+$`
+	match, _ := regexp.MatchString(pattern, s)
+	log.Printf("eth-api::IsHex::match: %v\n", match)
+	return match && len(s) < 32
 }
 
 func StringToInt(str string) int {
 	intValue, err := strconv.Atoi(str)
 	if err != nil {
-		log.Printf("StringToInt::error: %v\n", err)
+		log.Printf("eth-api::ERROR::StringToInt::error: %v\n", err)
 		return -1
 	}
 
@@ -35,7 +38,7 @@ func HexToInt(hexStr string) int {
 
 	intValue, err := strconv.ParseInt(hexStr, 16, 64)
 	if err != nil {
-		log.Printf("SetCurrentBlockNumber::error: %v\n", err)
+		log.Printf("eth-api::ERROR::SetCurrentBlockNumber::error: %v\n", err)
 		return -1
 	}
 

@@ -6,6 +6,7 @@ import (
 )
 
 func SetupRoutes(app *fiber.App, ethBlockHandler *handlers.EthBlockHandler, ethTransactionHandler *handlers.EthTransactionHandler) {
+	app.Get("/eth-blocks/latest", ethBlockHandler.GetLatestEthBlocksHandler)
 	app.Get("/eth-blocks/:blockIdentifier", ethBlockHandler.GetBlockByIdentifierHandler)
 	app.Get("/eth-transactions/:transactionHash", ethTransactionHandler.GetTransactionByHashHandler)
 	app.Get("/eth-events/:address", ethTransactionHandler.GetTransactionsByAddressHandler)

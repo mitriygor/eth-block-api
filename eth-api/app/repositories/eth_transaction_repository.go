@@ -41,7 +41,7 @@ func NewEthTransactionRepository(mongoClient *mongo.Client, redisClient *redis.C
 
 func (etr *ethTransactionRepository) GetTransactionByHash(hash string) (*models.EthTransaction, error) {
 
-	log.Printf("API::GetTransactionByHash::hash: %v\n", hash)
+	log.Printf("eth-api::GetTransactionByHash::hash: %v\n", hash)
 	mongoDb := "eth_transactions"
 	mongoCollection := "eth_transactions"
 
@@ -87,7 +87,7 @@ func (etr *ethTransactionRepository) getEthTransactionFromRedis(hash string) (*m
 	key.WriteString(":")
 	key.WriteString(hash)
 
-	log.Printf("API::getEthTransactionFromRedis::key: %v\n", key)
+	log.Printf("eth-api::getEthTransactionFromRedis::key: %v\n", key)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel() // Make sure to cancel the context when you are done to release resources
@@ -95,21 +95,21 @@ func (etr *ethTransactionRepository) getEthTransactionFromRedis(hash string) (*m
 	res, err := etr.redisClient.HGetAll(ctx, key.String()).Result()
 
 	if err != nil {
-		log.Printf("ERROR::API::getEthTransactionFromRedis::res::err: %v\n", err)
+		log.Printf("eth-api::ERROR::getEthTransactionFromRedis::res::err: %v\n", err)
 		return nil, err
 	}
 
-	log.Printf("API::getEthTransactionFromRedis::res: %v\n", res)
+	log.Printf("eth-api::getEthTransactionFromRedis::res: %v\n", res)
 
 	ethTransaction := &models.EthTransaction{}
 	err = mapstructure.Decode(res, ethTransaction)
 
 	if err != nil {
-		log.Printf("ERROR::API::getEthTransactionFromRedis::ethTransaction::err: %v\n", err)
+		log.Printf("eth-api::ERROR::getEthTransactionFromRedis::ethTransaction::err: %v\n", err)
 		return nil, err
 	}
 
-	log.Printf("API::getEthTransactionFromRedis::ethTransaction: %v\n", ethTransaction)
+	log.Printf("eth-api::ERROR::getEthTransactionFromRedis::ethTransaction: %v\n", ethTransaction)
 
 	return ethTransaction, nil
 }
@@ -120,11 +120,11 @@ func (etr *ethTransactionRepository) getEthTransactionFromMongo(hash string, dbN
 	collection := etr.mongoClient.Database(dbName).Collection(collectionName)
 	filter := bson.M{"hash": hash}
 
-	log.Printf("API::getEthTransactionFromMongo::hash: %v\n", hash)
-	log.Printf("API::getEthTransactionFromMongo::dbName: %v\n", dbName)
-	log.Printf("API::getEthTransactionFromMongo::collectionName: %v\n", collectionName)
-	log.Printf("API::getEthTransactionFromMongo::collection: %v\n", collection)
-	log.Printf("API::getEthTransactionFromMongo::filter: %v\n", filter)
+	log.Printf("eth-api::getEthTransactionFromMongo::hash: %v\n", hash)
+	log.Printf("eth-api::getEthTransactionFromMongo::dbName: %v\n", dbName)
+	log.Printf("eth-api::getEthTransactionFromMongo::collectionName: %v\n", collectionName)
+	log.Printf("eth-api::getEthTransactionFromMongo::collection: %v\n", collection)
+	log.Printf("eth-api::getEthTransactionFromMongo::filter: %v\n", filter)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -132,17 +132,17 @@ func (etr *ethTransactionRepository) getEthTransactionFromMongo(hash string, dbN
 	err := collection.FindOne(ctx, filter).Decode(&res)
 
 	if err != nil {
-		log.Printf("ERROR::API::getEthTransactionFromMongo::res::err: %v\n", err)
+		log.Printf("eth-api::ERROR::getEthTransactionFromMongo::res::err: %v\n", err)
 		return nil, err
 	}
 
-	log.Printf("API::getEthTransactionFromMongo::res: %v\n", res)
+	log.Printf("eth-api::getEthTransactionFromMongo::res: %v\n", res)
 
 	return &res, nil
 }
 
 func (etr *ethTransactionRepository) getEthTransactionFromApi(hash string) (*models.EthTransaction, error) {
-	log.Printf("API::getEthTransactionFromApi::hash: %v\n", hash)
+	log.Printf("eth-api::getEthTransactionFromApi::hash: %v\n", hash)
 
 	conn, err := connector.ConnectToQueue(etr.queueHost)
 	if err != nil {
@@ -153,7 +153,7 @@ func (etr *ethTransactionRepository) getEthTransactionFromApi(hash string) (*mod
 
 	ch, err := conn.Channel()
 	if err != nil {
-		log.Printf("ERROR::API::getEthTransactionFromApi::ch::err: %v\n", err)
+		log.Printf("eth-api::ERROR::getEthTransactionFromApi::ch::err: %v\n", err)
 	}
 	defer ch.Close()
 
@@ -166,7 +166,7 @@ func (etr *ethTransactionRepository) getEthTransactionFromApi(hash string) (*mod
 		nil,
 	)
 	if err != nil {
-		log.Printf("ERROR::API::getEthTransactionFromApi::replyToQueue::err: %v\n", err)
+		log.Printf("eth-api::ERROR::getEthTransactionFromApi::replyToQueue::err: %v\n", err)
 	}
 
 	msgs, err := ch.Consume(
@@ -179,7 +179,7 @@ func (etr *ethTransactionRepository) getEthTransactionFromApi(hash string) (*mod
 		nil,
 	)
 	if err != nil {
-		log.Printf("ERROR::API::getEthTransactionFromApi::msgs::err: %v\n", err)
+		log.Printf("eth-api::ERROR::getEthTransactionFromApi::msgs::err: %v\n", err)
 	}
 
 	correlationId := strconv.Itoa(rand.Int())
@@ -199,29 +199,29 @@ func (etr *ethTransactionRepository) getEthTransactionFromApi(hash string) (*mod
 			Body:          []byte(hash),
 		})
 	if err != nil {
-		log.Printf("ERROR::API::getEthTransactionFromApi::ch::err: %v\n", err)
+		log.Printf("eth-api::ERROR::getEthTransactionFromApi::ch::err: %v\n", err)
 	}
 
 	select {
 	case d := <-msgs:
 		if d.CorrelationId == correlationId {
-			log.Printf("API::getEthTransactionFromApi::d.Body: %v\n", string(d.Body))
+			log.Printf("eth-api::getEthTransactionFromApi::d.Body: %v\n", string(d.Body))
 			var et models.EthTransaction
 
 			err = json.Unmarshal(d.Body, &et)
 
-			log.Printf("API::getEthTransactionFromApi::err: %v\n", err)
-			log.Printf("API::getEthTransactionFromApi::et: %v\n", et)
+			log.Printf("eth-api::getEthTransactionFromApi::err: %v\n", err)
+			log.Printf("eth-api::getEthTransactionFromApi::et: %v\n", et)
 
 			if err != nil {
-				log.Printf("ERROR::API::getEthTransactionFromApi::et::err: %v\n", err)
+				log.Printf("eth-api::ERROR::getEthTransactionFromApi::et::err: %v\n", err)
 				return nil, err
 			}
 
 			return &et, nil
 		}
 	case <-time.After(5 * time.Second):
-		log.Printf("ERROR:API:getEthTransactionFromApi:timeout\n")
+		log.Printf("eth-api::ERROR:getEthTransactionFromApi:timeout\n")
 		return nil, errors.New("timeout")
 	}
 
@@ -237,11 +237,11 @@ func (etr *ethTransactionRepository) getEthTransactionsFromMongo(address string,
 	collection := etr.mongoClient.Database(dbName).Collection(collectionName)
 	filter := bson.D{{"accessList.address", address}}
 
-	log.Printf("API::getEthTransactionsFromMongo::address: %v\n", address)
-	log.Printf("API::getEthTransactionsFromMongo::dbName: %v\n", dbName)
-	log.Printf("API::getEthTransactionsFromMongo::collectionName: %v\n", collectionName)
-	log.Printf("API::getEthTransactionsFromMongo::collection: %v\n", collection)
-	log.Printf("API::getEthTransactionsFromMongo::filter: %v\n", filter)
+	log.Printf("eth-api::getEthTransactionsFromMongo::address: %v\n", address)
+	log.Printf("eth-api::getEthTransactionsFromMongo::dbName: %v\n", dbName)
+	log.Printf("eth-api::getEthTransactionsFromMongo::collectionName: %v\n", collectionName)
+	log.Printf("eth-api::getEthTransactionsFromMongo::collection: %v\n", collection)
+	log.Printf("eth-api::getEthTransactionsFromMongo::filter: %v\n", filter)
 
 	cur, err := collection.Find(context.TODO(), filter)
 	if err != nil {
@@ -257,7 +257,7 @@ func (etr *ethTransactionRepository) getEthTransactionsFromMongo(address string,
 		var result models.EthTransaction
 		err := cur.Decode(&result)
 		if err != nil {
-			log.Printf("ERROR::API::getEthTransactionsFromMongo::cur::err: %v\n", err)
+			log.Printf("eth-api::ERROR::getEthTransactionsFromMongo::cur::err: %v\n", err)
 		}
 		results = append(results, &result)
 	}

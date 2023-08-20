@@ -1,0 +1,252 @@
+version: '3.4'
+services:
+
+  eth-api:
+    build:
+      context: ./../eth-api
+      dockerfile: ./../eth-api/eth-api.dockerfile
+    restart: always
+    ports:
+      - "3000:3000"
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ./../eth-api:/app
+    depends_on:
+      - eth-redis # read from
+      - eth-blocks-mongo # read from
+      - eth-transactions-mongo # read from
+      - eth-blocks-requester-queue # push to/ consume from
+    sysctls:
+      - net.ipv4.ip_local_port_range=1024 65535
+      - net.ipv4.tcp_tw_reuse=1
+
+  eth-blocks-requester:
+    build:
+      context: ./../eth-blocks-requester
+      dockerfile: ./../eth-blocks-requester/eth-blocks-requester.dockerfile
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ./../eth-blocks-requester:/app
+    depends_on:
+      - eth-blocks-requester-queue # consume from
+      - eth-blocks-recorder-queue # push to
+    sysctls:
+      - net.ipv4.ip_local_port_range=1024 65535
+      - net.ipv4.tcp_tw_reuse=1
+
+  eth-blocks-requester-queue:
+    image: 'rabbitmq:3-management'
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ./.db-data/eth-blocks-requester-queue/:/var/lib/rabbitmq/
+    environment:
+      - RABBITMQ_CHANNEL_MAX=10000000
+
+  eth-blocks-recorder:
+    build:
+      context: ./../eth-blocks-recorder
+      dockerfile: ./../eth-blocks-recorder/eth-blocks-recorder.dockerfile
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ./../eth-blocks-recorder:/app
+    depends_on:
+      - eth-blocks-recorder-queue # consume from
+      - eth-blocks-mongo # write to
+    sysctls:
+      - net.ipv4.ip_local_port_range=1024 65535
+      - net.ipv4.tcp_tw_reuse=1
+
+  eth-blocks-recorder-queue:
+    image: 'rabbitmq:3-management'
+    ports:
+      - "5674:5672"
+      - "15674:15672"
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ./.db-data/eth-blocks-recorder-queue/:/var/lib/rabbitmq/
+    environment:
+      - RABBITMQ_CHANNEL_MAX=10000000
+
+  eth-blocks-mongo:
+    image: 'mongo:4.2.16-bionic'
+    ports:
+      - "27018:27017"
+    environment:
+      MONGO_INITDB_DATABASE: eth_blocks
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+    volumes:
+      - ./.db-data/mongodb/:/data/db
+
+  eth-blocks-scheduler:
+    build:
+      context: ./../eth-blocks-scheduler
+      dockerfile: ./../eth-blocks-scheduler/eth-blocks-scheduler.dockerfile
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ./../eth-blocks-scheduler:/app
+    depends_on:
+      - eth-redis-recorder-queue # push to
+      - eth-blocks-recorder-queue # push to
+      - eth-transactions-scheduler-queue # push to
+    sysctls:
+      - net.ipv4.ip_local_port_range=1024 65535
+      - net.ipv4.tcp_tw_reuse=1
+
+  eth-transactions-requester:
+    build:
+      context: ./../eth-transactions-requester
+      dockerfile: ./../eth-transactions-requester/eth-transactions-requester.dockerfile
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ./../eth-transactions-requester:/app
+    depends_on:
+      - eth-transactions-requester-queue # consume from
+      - eth-transactions-recorder-queue # push to
+    sysctls:
+      - net.ipv4.ip_local_port_range=1024 65535
+      - net.ipv4.tcp_tw_reuse=1
+
+  eth-transactions-requester-queue:
+    image: 'rabbitmq:3-management'
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ./.db-data/eth-transactions-requester-queue/:/var/lib/rabbitmq/
+    environment:
+      - RABBITMQ_CHANNEL_MAX=10000000
+
+  eth-transactions-recorder:
+    build:
+      context: ./../eth-transactions-recorder
+      dockerfile: ./../eth-transactions-recorder/eth-transactions-recorder.dockerfile
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ./../eth-transactions-recorder:/app
+    depends_on:
+      - eth-transactions-recorder-queue # consume from
+      - eth-transactions-mongo # write to
+    sysctls:
+      - net.ipv4.ip_local_port_range=1024 65535
+      - net.ipv4.tcp_tw_reuse=1
+
+  eth-transactions-recorder-queue:
+    image: 'rabbitmq:3-management'
+    ports:
+      - "5675:5672"
+      - "15675:15672"
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ./.db-data/eth-transactions-recorder-queue/:/var/lib/rabbitmq/
+    environment:
+      - RABBITMQ_CHANNEL_MAX=10000000
+
+  eth-transactions-mongo:
+    image: 'mongo:4.2.16-bionic'
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: eth_transactions
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+    volumes:
+      - ./.db-data/eth-transactions-mongo/:/data/db
+
+  eth-transactions-scheduler:
+    build:
+      context: ./../eth-transactions-scheduler
+      dockerfile: ./../eth-transactions-scheduler/eth-transactions-scheduler.dockerfile
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ./../eth-transactions-scheduler:/app
+    depends_on:
+      - eth-transactions-scheduler-queue # consume from
+      - eth-transactions-recorder-queue # push to
+      - eth-redis-recorder-queue # push to
+    sysctls:
+      - net.ipv4.ip_local_port_range=1024 65535
+      - net.ipv4.tcp_tw_reuse=1
+
+  eth-transactions-scheduler-queue:
+    image: 'rabbitmq:3-management'
+    ports:
+      - "5677:5672"
+      - "15677:15672"
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ./.db-data/eth-transactions-scheduler-queue/:/var/lib/rabbitmq/
+    environment:
+      - RABBITMQ_CHANNEL_MAX=10000000
+
+  eth-redis-recorder:
+    build:
+      context: ./../eth-redis-recorder
+      dockerfile: ./../eth-redis-recorder/eth-redis-recorder.dockerfile
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ./../eth-redis-recorder:/app
+    depends_on:
+      - eth-redis-recorder-queue # consume from
+      - eth-redis # write to
+    sysctls:
+      - net.ipv4.ip_local_port_range=1024 65535
+      - net.ipv4.tcp_tw_reuse=1
+
+  eth-redis-recorder-queue:
+    image: 'rabbitmq:3-management'
+    ports:
+      - "5679:5672"
+      - "15679:15672"
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ./.db-data/eth-redis-recorder-queue/:/var/lib/rabbitmq/
+    environment:
+      - RABBITMQ_CHANNEL_MAX=10000000
+
+  eth-redis:
+    image: 'redis:alpine'
+    ports:
+      - "6379:6379"
+    restart: always
+    volumes:
+      - ./.db-data/eth-redis/:/data

@@ -1,7 +1,6 @@
 package connector
 
 import (
-	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
 	"math"
@@ -16,21 +15,21 @@ func ConnectToQueue(host string) (*amqp.Connection, error) {
 	for {
 		c, err := amqp.Dial(host)
 		if err != nil {
-			fmt.Printf("ERROR::API::connectToQueue::err: %v\n", err)
+			log.Printf("eth-api::ERROR::ConnectToQueue::err: %v\n", err)
 			counts++
 		} else {
-			fmt.Println("API::connectToQueue::CONNECTED")
+			log.Println("eth-api::ConnectToQueue::CONNECTED")
 			connection = c
 			break
 		}
 
 		if counts > 10 {
-			fmt.Println(err)
+			log.Println(err)
 			return nil, err
 		}
 
 		backOff = time.Duration(math.Pow(float64(counts), 2)) * time.Second
-		log.Printf("API::connectToQueue::backOff: %v\n", backOff)
+		log.Printf("eth-api::ERROR::ConnectToQueue::backOff: %v\n", backOff)
 		time.Sleep(backOff)
 		continue
 	}

@@ -17,7 +17,7 @@ func ConnectToMongo(mongoUrl string, mongoUser string, mongoPassword string) (*m
 
 	c, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
-		log.Println("Error connecting:", err)
+		log.Println("eth-api::ERROR::Error connecting:", err)
 		return nil, err
 	}
 

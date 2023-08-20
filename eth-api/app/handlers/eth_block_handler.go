@@ -16,15 +16,30 @@ func NewEthBlockHandler(service services.EthBlockService) *EthBlockHandler {
 	}
 }
 
-func (h *EthBlockHandler) GetBlockByIdentifierHandler(c *fiber.Ctx) error {
-	blockIdentifier := c.Params("blockIdentifier")
-	log.Printf("API::GetBlockByIdentifierHandler: %v", blockIdentifier)
+func (h *EthBlockHandler) GetLatestEthBlocksHandler(c *fiber.Ctx) error {
 
-	ethBlock, err := h.EthBlockService.GetBlockByIdentifierService(blockIdentifier)
-	log.Printf("API::GetBlockByIdentifierHandler::ethBlock: %v; err: ; %v;", ethBlock, err)
+	ethBlock, err := h.EthBlockService.GetLatestEthBlocks()
 
 	if err != nil {
-		log.Printf("API::ERROR::GetBlockByIdentifierHandler::err: ; %v;", err)
+		log.Printf("eth-api::ERROR::GetLatestBlocksHandler::err: ; %v\n", err)
+
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Error retrieving EthBlock",
+		})
+	}
+
+	return c.JSON(ethBlock)
+}
+
+func (h *EthBlockHandler) GetBlockByIdentifierHandler(c *fiber.Ctx) error {
+	blockIdentifier := c.Params("blockIdentifier")
+	log.Printf("eth-api::GetBlockByIdentifierHandler: %v\n", blockIdentifier)
+
+	ethBlock, err := h.EthBlockService.GetBlockByIdentifierService(blockIdentifier)
+	log.Printf("eth-api::GetBlockByIdentifierHandler::ethBlock: %v; err: ; %v\n", ethBlock, err)
+
+	if err != nil {
+		log.Printf("eth-api::ERROR::GetBlockByIdentifierHandler::err: ; %v\n", err)
 
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Error retrieving EthBlock",

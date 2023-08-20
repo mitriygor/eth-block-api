@@ -2,9 +2,10 @@ package repositories
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"eth-api/app/models"
 	"eth-api/pkg/queue_helper/connector"
-	"fmt"
 	"github.com/go-redis/redis/v8"
 	"github.com/mitchellh/mapstructure"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -19,6 +20,7 @@ import (
 
 type EthBlockRepository interface {
 	GetEthBlockByIdentifier(identifier string, identifierType string) (*models.BlockDetails, error)
+	GetLatestEthBlocks() ([]*models.BlockDetails, error)
 }
 
 type ethBlockRepository struct {
@@ -35,6 +37,19 @@ func NewEthBlockRepository(mongoClient *mongo.Client, redisClient *redis.Client,
 		queueHost:   queueHost,
 		queueName:   queueName,
 	}
+}
+
+func (ebr *ethBlockRepository) GetLatestEthBlocks() ([]*models.BlockDetails, error) {
+
+	log.Printf("eth-api::GetLatestEthBlocks")
+
+	latestBlockDetails, err := ebr.getLatestEthBlocksFromRedis()
+
+	if err != nil || len(latestBlockDetails) == 0 {
+
+	}
+
+	return latestBlockDetails, nil
 }
 
 func (ebr *ethBlockRepository) GetEthBlockByIdentifier(identifier string, identifierType string) (*models.BlockDetails, error) {
@@ -55,16 +70,48 @@ func (ebr *ethBlockRepository) GetEthBlockByIdentifier(identifier string, identi
 	if err != nil || !ebr.isBlockValid(blockDetails) {
 		blockDetails, err = ebr.getEthBlockFromMongo(identifier, mongoField, mongoDb, mongoCollection)
 
+		log.Printf("eth-api::GetEthBlockByIdentifier::blockDetails: %v\n", blockDetails)
+		log.Printf("eth-api::GetEthBlockByIdentifier::err: %v\n", err)
+
 		if err != nil || !ebr.isBlockValid(blockDetails) {
 			blockDetails, err = ebr.getEthBlockFromApi(identifier, identifierType)
 
 			if err != nil || !ebr.isBlockValid(blockDetails) {
-				return nil, nil
+				return nil, errors.New("block not found")
 			}
 		}
 	}
 
-	return nil, nil
+	return blockDetails, nil
+}
+
+func (ebr *ethBlockRepository) getLatestEthBlocksFromRedis() ([]*models.BlockDetails, error) {
+	const key = "eth_blocks_latest"
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel() // Ensure the context is cancelled to release resources
+
+	// Retrieve all elements from the list
+	values, err := ebr.redisClient.LRange(ctx, key, 0, -1).Result()
+	if err != nil {
+		log.Printf("eth-api::ERROR::getLatestEthBlocksFromRedis::LRange::err: %v\n", err)
+		return nil, err
+	}
+
+	var blocks []*models.BlockDetails
+	for _, val := range values {
+		var blockDetails models.BlockDetails
+		err = json.Unmarshal([]byte(val), &blockDetails) // Assuming each list item is a JSON serialized BlockDetails
+		if err != nil {
+			log.Printf("eth-api::ERROR::getLatestEthBlocksFromRedis::Unmarshal::err: %v\n", err)
+			return nil, err
+		}
+
+		blocks = append(blocks, &blockDetails)
+	}
+
+	log.Printf("eth-api::getLatestEthBlocksFromRedis::blocks: %v\n", blocks)
+	return blocks, nil
 }
 
 func (ebr *ethBlockRepository) getEthBlockFromRedis(identifier string, collectionName string) (*models.BlockDetails, error) {
@@ -73,7 +120,7 @@ func (ebr *ethBlockRepository) getEthBlockFromRedis(identifier string, collectio
 	key.WriteString(":")
 	key.WriteString(identifier)
 
-	log.Printf("API::getEthBlockFromRedis::key: %v;", key)
+	log.Printf("eth-api::getEthBlockFromRedis::key: %v\n", key)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel() // Make sure to cancel the context when you are done to release resources
@@ -81,26 +128,32 @@ func (ebr *ethBlockRepository) getEthBlockFromRedis(identifier string, collectio
 	res, err := ebr.redisClient.HGetAll(ctx, key.String()).Result()
 
 	if err != nil {
-		log.Printf("ERROR::API::getEthBlockFromRedis::res::err: %v;", err)
+		log.Printf("eth-api::ERROR::getEthBlockFromRedis::res::err: %v\n", err)
 		return nil, err
 	}
 
-	log.Printf("API::getEthBlockFromRedis::res: %v", res)
+	log.Printf("eth-api::getEthBlockFromRedis::res: %v\n", res)
 
 	blockDetails := &models.BlockDetails{}
 	err = mapstructure.Decode(res, blockDetails)
 
 	if err != nil {
-		log.Printf("ERROR::API::getEthBlockFromRedis::blockDetails::err: %v;", err)
+		log.Printf("eth-api::ERROR::getEthBlockFromRedis::blockDetails::err: %v\n", err)
 		return nil, err
 	}
 
-	log.Printf("API::getEthBlockFromRedis::blockDetails: %v", blockDetails)
+	log.Printf("eth-api::getEthBlockFromRedis::blockDetails: %v\n", blockDetails)
 
 	return blockDetails, nil
 }
 
 func (ebr *ethBlockRepository) getEthBlockFromMongo(identifier string, identifierType string, dbName string, collectionName string) (*models.BlockDetails, error) {
+
+	log.Printf("eth-api::getEthBlockFromMongo::identifier: %v\n", identifier)
+	log.Printf("eth-api::getEthBlockFromMongo::identifierType: %v\n", identifierType)
+	log.Printf("eth-api::getEthBlockFromMongo::dbName: %v\n", dbName)
+	log.Printf("eth-api::getEthBlockFromMongo::collectionName: %v\n", collectionName)
+
 	var res models.BlockDetails
 	collection := ebr.mongoClient.Database(dbName).Collection(collectionName)
 	filter := bson.M{identifierType: identifier}
@@ -111,11 +164,11 @@ func (ebr *ethBlockRepository) getEthBlockFromMongo(identifier string, identifie
 	err := collection.FindOne(ctx, filter).Decode(&res)
 
 	if err != nil {
-		log.Printf("ERROR::API::getEthBlockFromMongo::res::err: %v;", err)
+		log.Printf("eth-api::ERROR::getEthBlockFromMongo::res::err: %v\n", err)
 		return nil, err
 	}
 
-	log.Printf("API::getEthBlockFromMongo::res: %v;", res)
+	log.Printf("eth-api::getEthBlockFromMongo::res: %v\n", res)
 
 	return &res, nil
 }
@@ -130,7 +183,7 @@ func (ebr *ethBlockRepository) getEthBlockFromApi(identifier string, identifierT
 
 	ch, err := conn.Channel()
 	if err != nil {
-		log.Printf("ERROR::API::getEthBlockFromApi::ch::err: %v\n", err)
+		log.Printf("eth-api::ERROR::getEthBlockFromApi::ch::err: %v\n", err)
 	}
 	defer ch.Close()
 
@@ -143,7 +196,7 @@ func (ebr *ethBlockRepository) getEthBlockFromApi(identifier string, identifierT
 		nil,
 	)
 	if err != nil {
-		log.Printf("ERROR::API::getEthBlockFromApi::replyToQueue::err: %v\n", err)
+		log.Printf("eth-api::ERROR::getEthBlockFromApi::replyToQueue::err: %v\n", err)
 	}
 
 	msgs, err := ch.Consume(
@@ -156,7 +209,7 @@ func (ebr *ethBlockRepository) getEthBlockFromApi(identifier string, identifierT
 		nil,
 	)
 	if err != nil {
-		log.Printf("ERROR::API::getEthBlockFromApi::msgs::err: %v\n", err)
+		log.Printf("eth-api::ERROR::getEthBlockFromApi::msgs::err: %v\n", err)
 	}
 
 	correlationId := strconv.Itoa(rand.Int())
@@ -165,7 +218,15 @@ func (ebr *ethBlockRepository) getEthBlockFromApi(identifier string, identifierT
 		Identifier:     identifier,
 		IdentifierType: identifierType,
 	}
-	blockIdentifierStr := fmt.Sprintf("%+v", blockIdentifier)
+	//blockIdentifierStr := fmt.Sprintf("%+v", blockIdentifier)
+
+	blockIdentifierJson, err := json.MarshalIndent(blockIdentifier, "", "  ")
+
+	if err != nil {
+		log.Printf("eth-api::ERROR::getEthBlockFromApi::blockIdentifierJson::err: %v\n", err)
+	}
+
+	log.Printf("eth-api::getEthBlockFromApi::blockIdentifierJson: %v\n", blockIdentifierJson)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -179,20 +240,20 @@ func (ebr *ethBlockRepository) getEthBlockFromApi(identifier string, identifierT
 			ContentType:   "text/plain",
 			CorrelationId: correlationId,
 			ReplyTo:       replyToQueue.Name,
-			Body:          []byte(blockIdentifierStr),
+			Body:          []byte(blockIdentifierJson),
 		})
 	if err != nil {
-		log.Printf("ERROR::API::getEthBlockFromApi::ch::err: %v\n", err)
+		log.Printf("eth-api::ERROR::getEthBlockFromApi::ch::err: %v\n", err)
 	}
 
 	select {
 	case d := <-msgs:
 		if d.CorrelationId == correlationId {
-			log.Printf("API::getEthBlockFromApi::d.Body: %v\n", string(d.Body))
+			log.Printf("eth-api::getEthBlockFromApi::d.Body: %v\n", string(d.Body))
 			return nil, nil
 		}
-	case <-time.After(5 * time.Second):
-		log.Printf("ERROR:API:getEthBlockFromApi:timeout\n")
+	case <-time.After(10 * time.Second):
+		log.Printf("eth-api::ERROR:::getEthBlockFromApi:timeout\n")
 	}
 
 	return nil, nil

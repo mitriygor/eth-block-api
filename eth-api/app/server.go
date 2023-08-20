@@ -24,9 +24,9 @@ type QueueCredentials struct {
 	Name string
 }
 
-func NewApp(redisHost string, ethBlockMongo MongoCredentials, ethTransactionMongo MongoCredentials, ethBlockQueue QueueCredentials, ethTransactionQueue QueueCredentials) *fiber.App {
+func NewApp(redisHost string, ethBlocksMongoCredentials MongoCredentials, ethTransactionMongo MongoCredentials, ethBlocksQueueCredentials QueueCredentials, ethTransactionsRequesterCredentials QueueCredentials) *fiber.App {
 
-	ethBlockMongoClient, err := mongo_helper.ConnectToMongo(ethBlockMongo.Url, ethBlockMongo.User, ethBlockMongo.Password)
+	ethBlockMongoClient, err := mongo_helper.ConnectToMongo(ethBlocksMongoCredentials.Url, ethBlocksMongoCredentials.User, ethBlocksMongoCredentials.Password)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -42,8 +42,8 @@ func NewApp(redisHost string, ethBlockMongo MongoCredentials, ethTransactionMong
 		DB:       0,
 	})
 
-	ethBlockHandler := initEthBlockHandler(ethBlockMongoClient, redisClient, ethBlockQueue.Host, ethBlockQueue.Name)
-	ethTransactionHandler := initEthTransactionHandler(ethTransactionMongoClient, redisClient, ethTransactionQueue.Host, ethTransactionQueue.Name)
+	ethBlockHandler := initEthBlockHandler(ethBlockMongoClient, redisClient, ethBlocksQueueCredentials.Host, ethBlocksQueueCredentials.Name)
+	ethTransactionHandler := initEthTransactionHandler(ethTransactionMongoClient, redisClient, ethTransactionsRequesterCredentials.Host, ethTransactionsRequesterCredentials.Name)
 
 	app := fiber.New()
 
