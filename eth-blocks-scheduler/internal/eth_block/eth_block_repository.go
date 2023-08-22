@@ -48,7 +48,7 @@ func (ebr *EthBlockRepository) PushBlocksForRecording(bd BlockDetails) error {
 		false,
 		amqp.Publishing{
 			ContentType:  "text/plain",
-			Body:         []byte(j),
+			Body:         j,
 			DeliveryMode: amqp.Persistent,
 		},
 	)
@@ -74,7 +74,7 @@ func (ebr *EthBlockRepository) PushBlocksForRedis(bd BlockDetails) error {
 		false,
 		amqp.Publishing{
 			ContentType:  "text/plain",
-			Body:         []byte(j),
+			Body:         j,
 			DeliveryMode: amqp.Persistent,
 		},
 	)
@@ -101,7 +101,7 @@ func (ebr *EthBlockRepository) PushTransactionsForScheduling(transactions []stri
 		false,
 		amqp.Publishing{
 			ContentType:  "text/plain",
-			Body:         []byte(j),
+			Body:         j,
 			DeliveryMode: amqp.Persistent,
 		},
 	)

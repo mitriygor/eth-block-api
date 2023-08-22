@@ -269,10 +269,10 @@ func (etr *ethTransactionRepository) getEthTransactionsFromMongo(address string,
 	return results, nil
 }
 
-func (ebr *ethTransactionRepository) isTransactionValid(transaction *models.EthTransaction) bool {
+func (etr *ethTransactionRepository) isTransactionValid(transaction *models.EthTransaction) bool {
 	return transaction != nil && transaction.Hash != ""
 }
 
-func (ebr *ethTransactionRepository) isTransactionsListValid(transactions []*models.EthTransaction) bool {
+func (etr *ethTransactionRepository) isTransactionsListValid(transactions []*models.EthTransaction) bool {
 	return transactions != nil && len(transactions) > 0
 }

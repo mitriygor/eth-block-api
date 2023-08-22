@@ -5,9 +5,9 @@ services:
     build:
       context: ./../eth-api
       dockerfile: ./../eth-api/eth-api.dockerfile
-    restart: always
     ports:
       - "3000:3000"
+    restart: always
     deploy:
       mode: replicated
       replicas: 1
@@ -44,6 +44,7 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    restart: always
     deploy:
       mode: replicated
       replicas: 1
@@ -74,6 +75,7 @@ services:
     ports:
       - "5674:5672"
       - "15674:15672"
+    restart: always
     deploy:
       mode: replicated
       replicas: 1
@@ -86,6 +88,10 @@ services:
     image: 'mongo:4.2.16-bionic'
     ports:
       - "27018:27017"
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
     environment:
       MONGO_INITDB_DATABASE: eth_blocks
       MONGO_INITDB_ROOT_USERNAME: admin
@@ -133,6 +139,7 @@ services:
     ports:
       - "5673:5672"
       - "15673:15672"
+    restart: always
     deploy:
       mode: replicated
       replicas: 1
@@ -163,6 +170,7 @@ services:
     ports:
       - "5675:5672"
       - "15675:15672"
+    restart: always
     deploy:
       mode: replicated
       replicas: 1
@@ -174,7 +182,11 @@ services:
   eth-transactions-mongo:
     image: 'mongo:4.2.16-bionic'
     ports:
-      - "27017:27017"
+      - "27015:27017"
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
     environment:
       MONGO_INITDB_DATABASE: eth_transactions
       MONGO_INITDB_ROOT_USERNAME: admin
@@ -203,8 +215,9 @@ services:
   eth-transactions-scheduler-queue:
     image: 'rabbitmq:3-management'
     ports:
-      - "5677:5672"
-      - "15677:15672"
+      - "5679:5672"
+      - "15679:15672"
+    restart: always
     deploy:
       mode: replicated
       replicas: 1
@@ -233,8 +246,9 @@ services:
   eth-redis-recorder-queue:
     image: 'rabbitmq:3-management'
     ports:
-      - "5679:5672"
-      - "15679:15672"
+      - "5681:5672"
+      - "15681:15672"
+    restart: always
     deploy:
       mode: replicated
       replicas: 1
@@ -248,5 +262,8 @@ services:
     ports:
       - "6379:6379"
     restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
     volumes:
       - ./.db-data/eth-redis/:/data

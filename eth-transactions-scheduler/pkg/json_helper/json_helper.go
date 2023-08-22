@@ -46,7 +46,7 @@ func PostRequest(url string, body interface{}, result interface{}) error {
 
 	if hasError(result) {
 		log.Printf("eth-transactions-scheduler::PostRequest::ERROR:: %v\n", result)
-		return fmt.Errorf("Response contains an error field")
+		return fmt.Errorf("eth-transactions-scheduler::PostRequest::ERROR:: %v/n", "Response contains an error field")
 	}
 
 	return nil

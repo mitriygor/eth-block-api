@@ -46,7 +46,7 @@ func PostRequest(url string, body interface{}, result interface{}) error {
 	}
 
 	log.Printf("eth-blocks-requester::PostRequest::respBody: %v\n", respBody)
-	log.Printf("eth-blocks-requester::PostRequest::[]byte(respBody): %v\n", []byte(respBody))
+	log.Printf("eth-blocks-requester::PostRequest::[]byte(respBody): %v\n", respBody)
 	log.Printf("eth-blocks-requester::PostRequest::string(respBody): %v\n", string(respBody))
 
 	if err := json.Unmarshal(respBody, result); err != nil {

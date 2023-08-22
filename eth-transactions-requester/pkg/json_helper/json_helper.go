@@ -45,7 +45,8 @@ func PostRequest(url string, body interface{}, result interface{}) error {
 	}
 
 	if hasError(result) {
-		return fmt.Errorf("Response contains an error field")
+		log.Printf("eth-transactions-requester::PostRequest::ERROR:: %v\n", result)
+		return fmt.Errorf("eth-transactions-requester::PostRequest::ERROR:: %v/n", "Response contains an error field")
 	}
 
 	return nil

@@ -240,7 +240,7 @@ func (ebr *ethBlockRepository) getEthBlockFromApi(identifier string, identifierT
 			ContentType:   "text/plain",
 			CorrelationId: correlationId,
 			ReplyTo:       replyToQueue.Name,
-			Body:          []byte(blockIdentifierJson),
+			Body:          blockIdentifierJson,
 		})
 	if err != nil {
 		log.Printf("eth-api::ERROR::getEthBlockFromApi::ch::err: %v\n", err)

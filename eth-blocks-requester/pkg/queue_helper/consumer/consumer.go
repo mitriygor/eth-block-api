@@ -39,11 +39,11 @@ func Consume(ch *amqp.Channel, name string, service eth_block.Service) {
 
 		var bi eth_block.BlockIdentifier
 
-		err := json.Unmarshal([]byte(d.Body), &bi)
+		err := json.Unmarshal(d.Body, &bi)
 		if err != nil {
 			log.Printf("eth-blocks-requester::d.Body: %v\n", d.Body)
-			log.Printf("eth-blocks-requester::[]byte(d.Body): %v\n", []byte(d.Body))
-			log.Printf("eth-blocks-requester::string([]byte(d.Body)): %v\n", string([]byte(d.Body)))
+			log.Printf("eth-blocks-requester::[]byte(d.Body): %v\n", d.Body)
+			log.Printf("eth-blocks-requester::string([]byte(d.Body)): %v\n", string(d.Body))
 			log.Fatalf("eth-blocks-requester::Error unmarshaling JSON: %v\n", err)
 		}
 

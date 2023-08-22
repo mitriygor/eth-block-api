@@ -12,27 +12,6 @@ type Emitter struct {
 	confirm    chan amqp.Confirmation
 }
 
-func NewEmitter(conn *amqp.Connection) (*Emitter, error) {
-	channel, err := conn.Channel()
-	if err != nil {
-		return nil, err
-	}
-
-	if err = channel.Confirm(false); err != nil {
-		return nil, err
-	}
-
-	confirm := channel.NotifyPublish(make(chan amqp.Confirmation, 1))
-
-	emitter := &Emitter{
-		connection: conn,
-		channel:    channel,
-		confirm:    confirm,
-	}
-
-	return emitter, nil
-}
-
 func (e *Emitter) Close() error {
 	return e.channel.Close()
 }
