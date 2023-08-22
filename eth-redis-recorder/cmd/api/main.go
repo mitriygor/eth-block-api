@@ -1,10 +1,10 @@
 package main
 
 import (
+	"eth-helpers/queue_helper/connector"
 	"eth-redis-recorder/event"
 	"eth-redis-recorder/internal/eth_block"
 	"eth-redis-recorder/internal/eth_transaction"
-	"eth-redis-recorder/pkg/queue_helper/connector"
 	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
 	"log"

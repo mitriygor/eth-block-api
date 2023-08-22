@@ -1,13 +1,18 @@
 FROM golang:1.19
-WORKDIR /app
+
+WORKDIR /app/eth-api
 
 RUN go install github.com/cosmtrek/air@latest
 
-COPY go.mod ./
-COPY .air.toml ./
+COPY eth-helpers /app/eth-helpers
+
+COPY eth-api/go.mod /app/eth-api
+COPY eth-api/.air.toml /app/eth-api
+COPY eth-api/.env /app/eth-api
+
 RUN go mod download
 
-COPY . .
+COPY eth-api /app/eth-api
 
 EXPOSE 3000
 

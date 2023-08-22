@@ -2,9 +2,9 @@ package main
 
 import (
 	"eth-blocks-scheduler/internal/eth_block"
-	"eth-blocks-scheduler/pkg/cron_job"
-	"eth-blocks-scheduler/pkg/queue_helper/connector"
-	"eth-blocks-scheduler/pkg/url_helper"
+	"eth-helpers/cron_job"
+	"eth-helpers/queue_helper/connector"
+	"eth-helpers/url_helper"
 	"github.com/joho/godotenv"
 	"log"
 	"os"

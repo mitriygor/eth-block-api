@@ -2,7 +2,7 @@ package services
 
 import (
 	"eth-api/app/repositories"
-	"eth-api/pkg/eth_block_helper"
+	"eth-helpers/eth_block_helper"
 	"log"
 )
 import "eth-api/app/models"

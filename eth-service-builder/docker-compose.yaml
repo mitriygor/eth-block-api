@@ -1,10 +1,11 @@
 version: '3.4'
 services:
 
+  # A server which exposes endpoints to request data from the data storages and APIs
   eth-api:
     build:
-      context: ./../eth-api
-      dockerfile: ./../eth-api/eth-api.dockerfile
+      context: ..
+      dockerfile: ./eth-api/eth-api.dockerfile
     ports:
       - "3000:3000"
     restart: always
@@ -12,7 +13,8 @@ services:
       mode: replicated
       replicas: 1
     volumes:
-      - ./../eth-api:/app
+      - ./../eth-api:/app/eth-api
+      - ./../eth-helpers:/app/eth-helpers
     depends_on:
       - eth-redis # read from
       - eth-blocks-mongo # read from
@@ -22,16 +24,20 @@ services:
       - net.ipv4.ip_local_port_range=1024 65535
       - net.ipv4.tcp_tw_reuse=1
 
+  # A server which requests blocks from the external API
+  # It consumes blocks identifiers from the eth-blocks-requester-queue and pushes blocks
+  # to the eth-blocks-recorder-queue for further recording in a data storage, i.e. MongoDB
   eth-blocks-requester:
     build:
-      context: ./../eth-blocks-requester
-      dockerfile: ./../eth-blocks-requester/eth-blocks-requester.dockerfile
+      context: ..
+      dockerfile: ./eth-blocks-requester/eth-blocks-requester.dockerfile
     restart: always
     deploy:
       mode: replicated
       replicas: 1
     volumes:
-      - ./../eth-blocks-requester:/app
+      - ./../eth-blocks-requester:/app/eth-blocks-requester
+      - ./../eth-helpers:/app/eth-helpers
     depends_on:
       - eth-blocks-requester-queue # consume from
       - eth-blocks-recorder-queue # push to
@@ -39,6 +45,8 @@ services:
       - net.ipv4.ip_local_port_range=1024 65535
       - net.ipv4.tcp_tw_reuse=1
 
+  # A queue from which the eth-blocks-requester consumes messages
+  # which are pushed by the eth-api
   eth-blocks-requester-queue:
     image: 'rabbitmq:3-management'
     ports:
@@ -53,16 +61,19 @@ services:
     environment:
       - RABBITMQ_CHANNEL_MAX=10000000
 
+  # A server which records blocks to a data storage
+  # It consumes blocks from a queue and writes them to a data storage, i.e. MongoDB
   eth-blocks-recorder:
     build:
-      context: ./../eth-blocks-recorder
-      dockerfile: ./../eth-blocks-recorder/eth-blocks-recorder.dockerfile
+      context: ..
+      dockerfile: ./eth-blocks-recorder/eth-blocks-recorder.dockerfile
     restart: always
     deploy:
       mode: replicated
       replicas: 1
     volumes:
-      - ./../eth-blocks-recorder:/app
+      - ./../eth-blocks-recorder:/app/eth-blocks-recorder
+      - ./../eth-helpers:/app/eth-helpers
     depends_on:
       - eth-blocks-recorder-queue # consume from
       - eth-blocks-mongo # write to
@@ -70,6 +81,8 @@ services:
       - net.ipv4.ip_local_port_range=1024 65535
       - net.ipv4.tcp_tw_reuse=1
 
+  # A queue from which the eth-blocks-recorder consumes messages
+  # for further recording in the storage
   eth-blocks-recorder-queue:
     image: 'rabbitmq:3-management'
     ports:
@@ -84,6 +97,7 @@ services:
     environment:
       - RABBITMQ_CHANNEL_MAX=10000000
 
+  # The data storage for the blocks
   eth-blocks-mongo:
     image: 'mongo:4.2.16-bionic'
     ports:
@@ -99,16 +113,18 @@ services:
     volumes:
       - ./.db-data/mongodb/:/data/db
 
+  # A cron-job which sends requests to the external API to fetch the latest blocks
   eth-blocks-scheduler:
     build:
-      context: ./../eth-blocks-scheduler
-      dockerfile: ./../eth-blocks-scheduler/eth-blocks-scheduler.dockerfile
+      context: ..
+      dockerfile: ./eth-blocks-scheduler/eth-blocks-scheduler.dockerfile
     restart: always
     deploy:
       mode: replicated
       replicas: 1
     volumes:
-      - ./../eth-blocks-scheduler:/app
+      - ./../eth-blocks-scheduler:/app/eth-blocks-scheduler
+      - ./../eth-helpers:/app/eth-helpers
     depends_on:
       - eth-redis-recorder-queue # push to
       - eth-blocks-recorder-queue # push to
@@ -117,16 +133,20 @@ services:
       - net.ipv4.ip_local_port_range=1024 65535
       - net.ipv4.tcp_tw_reuse=1
 
+  # A server which requests transactions from the external API
+  # It consumes transactions hashes from the eth-transactions-requester-queue and pushes transactions
+  # to the eth-transactions-recorder-queue for further recording in a data storage, i.e. MongoDB
   eth-transactions-requester:
     build:
-      context: ./../eth-transactions-requester
-      dockerfile: ./../eth-transactions-requester/eth-transactions-requester.dockerfile
+      context: ..
+      dockerfile: ./eth-transactions-requester/eth-transactions-requester.dockerfile
     restart: always
     deploy:
       mode: replicated
       replicas: 1
     volumes:
-      - ./../eth-transactions-requester:/app
+      - ./../eth-transactions-requester:/app/eth-transactions-requester
+      - ./../eth-helpers:/app/eth-helpers
     depends_on:
       - eth-transactions-requester-queue # consume from
       - eth-transactions-recorder-queue # push to
@@ -134,6 +154,8 @@ services:
       - net.ipv4.ip_local_port_range=1024 65535
       - net.ipv4.tcp_tw_reuse=1
 
+  # A queue from which the eth-transactions-requester consumes messages
+  # which are pushed by the eth-api
   eth-transactions-requester-queue:
     image: 'rabbitmq:3-management'
     ports:
@@ -148,16 +170,20 @@ services:
     environment:
       - RABBITMQ_CHANNEL_MAX=10000000
 
+
+  # A server which records transactions to a data storage
+  # It consumes transactions from a queue and writes them to a data storage, i.e. MongoDB
   eth-transactions-recorder:
     build:
-      context: ./../eth-transactions-recorder
-      dockerfile: ./../eth-transactions-recorder/eth-transactions-recorder.dockerfile
+      context: ..
+      dockerfile: ./eth-transactions-recorder/eth-transactions-recorder.dockerfile
     restart: always
     deploy:
       mode: replicated
       replicas: 1
     volumes:
-      - ./../eth-transactions-recorder:/app
+      - ./../eth-transactions-recorder:/app/eth-transactions-recorder
+      - ./../eth-helpers:/app/eth-helpers
     depends_on:
       - eth-transactions-recorder-queue # consume from
       - eth-transactions-mongo # write to
@@ -165,6 +191,8 @@ services:
       - net.ipv4.ip_local_port_range=1024 65535
       - net.ipv4.tcp_tw_reuse=1
 
+  # A queue from which the eth-transactions-recorder consumes messages
+  # for further recording in the storage
   eth-transactions-recorder-queue:
     image: 'rabbitmq:3-management'
     ports:
@@ -179,6 +207,7 @@ services:
     environment:
       - RABBITMQ_CHANNEL_MAX=10000000
 
+  # The data storage for the transactions
   eth-transactions-mongo:
     image: 'mongo:4.2.16-bionic'
     ports:
@@ -194,16 +223,18 @@ services:
     volumes:
       - ./.db-data/eth-transactions-mongo/:/data/db
 
+  # A service which is called by cron-job which sends requests to the external API to fetch the latest blocks
   eth-transactions-scheduler:
     build:
-      context: ./../eth-transactions-scheduler
-      dockerfile: ./../eth-transactions-scheduler/eth-transactions-scheduler.dockerfile
+      context: ..
+      dockerfile: ./eth-transactions-scheduler/eth-transactions-scheduler.dockerfile
     restart: always
     deploy:
       mode: replicated
       replicas: 1
     volumes:
-      - ./../eth-transactions-scheduler:/app
+      - ./../eth-transactions-scheduler:/app/eth-transactions-scheduler
+      - ./../eth-helpers:/app/eth-helpers
     depends_on:
       - eth-transactions-scheduler-queue # consume from
       - eth-transactions-recorder-queue # push to
@@ -212,6 +243,8 @@ services:
       - net.ipv4.ip_local_port_range=1024 65535
       - net.ipv4.tcp_tw_reuse=1
 
+  # A queue from which the eth-transactions-scheduler consumes messages
+  # which are pushed by the eth-blocks-scheduler
   eth-transactions-scheduler-queue:
     image: 'rabbitmq:3-management'
     ports:
@@ -226,16 +259,18 @@ services:
     environment:
       - RABBITMQ_CHANNEL_MAX=10000000
 
+  # A server which records blocks and transactions to redis
   eth-redis-recorder:
     build:
-      context: ./../eth-redis-recorder
-      dockerfile: ./../eth-redis-recorder/eth-redis-recorder.dockerfile
+      context: ..
+      dockerfile: ./eth-redis-recorder/eth-redis-recorder.dockerfile
     restart: always
     deploy:
       mode: replicated
       replicas: 1
     volumes:
-      - ./../eth-redis-recorder:/app
+      - ./../eth-redis-recorder:/app/eth-redis-recorder
+      - ./../eth-helpers:/app/eth-helpers
     depends_on:
       - eth-redis-recorder-queue # consume from
       - eth-redis # write to
@@ -243,6 +278,7 @@ services:
       - net.ipv4.ip_local_port_range=1024 65535
       - net.ipv4.tcp_tw_reuse=1
 
+  # A queue from which the eth-redis-recorder consumes messages with blocks and transactions
   eth-redis-recorder-queue:
     image: 'rabbitmq:3-management'
     ports:
@@ -257,6 +293,7 @@ services:
     environment:
       - RABBITMQ_CHANNEL_MAX=10000000
 
+  # Redis to preserve latest blocks and transactions
   eth-redis:
     image: 'redis:alpine'
     ports:

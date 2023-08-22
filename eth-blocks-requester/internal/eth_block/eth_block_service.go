@@ -1,8 +1,8 @@
 package eth_block
 
 import (
-	"eth-blocks-requester/pkg/json_helper"
-	"eth-blocks-requester/pkg/url_helper"
+	"eth-helpers/json_helper"
+	"eth-helpers/url_helper"
 	"log"
 )
 

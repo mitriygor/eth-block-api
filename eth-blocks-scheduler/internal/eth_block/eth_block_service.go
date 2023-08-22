@@ -1,8 +1,8 @@
 package eth_block
 
 import (
-	"eth-blocks-scheduler/pkg/json_helper"
-	"eth-blocks-scheduler/pkg/url_helper"
+	"eth-helpers/json_helper"
+	"eth-helpers/url_helper"
 	"fmt"
 	"log"
 	"strconv"

@@ -9,6 +9,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/rabbitmq/amqp091-go v1.8.1
 	go.mongodb.org/mongo-driver v1.12.1
+	eth-helpers v0.0.0
 )
 
 require (
@@ -35,3 +36,5 @@ require (
 	golang.org/x/sys v0.10.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
 )
+
+replace eth-helpers v0.0.0 => ../eth-helpers

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"eth-api/app/models"
-	"eth-api/pkg/queue_helper/connector"
+	"eth-helpers/queue_helper/connector"
 	"github.com/go-redis/redis/v8"
 	"github.com/mitchellh/mapstructure"
 	amqp "github.com/rabbitmq/amqp091-go"

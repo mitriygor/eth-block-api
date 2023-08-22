@@ -6,6 +6,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/joho/godotenv v1.5.1
 	github.com/rabbitmq/amqp091-go v1.8.1
+	eth-helpers v0.0.0
 )
 
 require (
@@ -15,3 +16,5 @@ require (
 	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
 	golang.org/x/text v0.7.0 // indirect
 )
+
+replace eth-helpers v0.0.0 => ../eth-helpers

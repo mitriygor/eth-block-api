@@ -1,10 +1,10 @@
 package main
 
 import (
+	"eth-helpers/queue_helper/connector"
+	"eth-helpers/url_helper"
 	"eth-transactions-scheduler/event"
 	"eth-transactions-scheduler/internal/eth_transaction"
-	"eth-transactions-scheduler/pkg/queue_helper/connector"
-	"eth-transactions-scheduler/pkg/url_helper"
 	"github.com/joho/godotenv"
 	"log"
 	"os"

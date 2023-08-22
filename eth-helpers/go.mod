@@ -1,12 +1,10 @@
-module eth-transactions-recorder
+module eth-helpers
 
 go 1.19
 
 require (
-	github.com/joho/godotenv v1.5.1
 	github.com/rabbitmq/amqp091-go v1.8.1
 	go.mongodb.org/mongo-driver v1.12.1
-	eth-helpers v0.0.0
 )
 
 require (
@@ -21,5 +19,3 @@ require (
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
 	golang.org/x/text v0.7.0 // indirect
 )
-
-replace eth-helpers v0.0.0 => ../eth-helpers

@@ -2,9 +2,9 @@ package main
 
 import (
 	"eth-blocks-requester/internal/eth_block"
-	"eth-blocks-requester/pkg/queue_helper/connector"
 	"eth-blocks-requester/pkg/queue_helper/consumer"
-	"eth-blocks-requester/pkg/url_helper"
+	"eth-helpers/queue_helper/connector"
+	"eth-helpers/url_helper"
 	"github.com/joho/godotenv"
 	"log"
 	"os"

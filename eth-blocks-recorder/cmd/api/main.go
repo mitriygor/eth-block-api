@@ -3,8 +3,8 @@ package main
 import (
 	"eth-blocks-recorder/event"
 	"eth-blocks-recorder/internal/eth_block"
-	"eth-blocks-recorder/pkg/mongo_helper"
-	"eth-blocks-recorder/pkg/queue_helper/connector"
+	"eth-helpers/mongo_helper"
+	"eth-helpers/queue_helper/connector"
 	"github.com/joho/godotenv"
 	"log"
 	"os"

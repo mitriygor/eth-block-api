@@ -1,10 +1,10 @@
 package main
 
 import (
+	"eth-helpers/mongo_helper"
+	"eth-helpers/queue_helper/connector"
 	"eth-transactions-recorder/event"
 	"eth-transactions-recorder/internal/eth_transaction"
-	"eth-transactions-recorder/pkg/mongo_helper"
-	"eth-transactions-recorder/pkg/queue_helper/connector"
 	"github.com/joho/godotenv"
 	"log"
 	"os"

@@ -6,7 +6,7 @@ import (
 	"eth-api/app/repositories"
 	"eth-api/app/routes"
 	"eth-api/app/services"
-	"eth-api/pkg/mongo_helper"
+	"eth-helpers/mongo_helper"
 	"github.com/go-redis/redis/v8"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/mongo"

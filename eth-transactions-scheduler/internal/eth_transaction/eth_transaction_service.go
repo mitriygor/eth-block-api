@@ -1,8 +1,8 @@
 package eth_transaction
 
 import (
-	"eth-transactions-scheduler/pkg/json_helper"
-	"eth-transactions-scheduler/pkg/url_helper"
+	"eth-helpers/json_helper"
+	"eth-helpers/url_helper"
 	"log"
 )
 
