@@ -4,11 +4,9 @@ import (
 	"context"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
 )
 
 func ConnectToMongo(mongoUrl string, mongoUser string, mongoPassword string) (*mongo.Client, error) {
-
 	clientOptions := options.Client().ApplyURI(mongoUrl)
 	clientOptions.SetAuth(options.Credential{
 		Username: mongoUser,
@@ -17,7 +15,6 @@ func ConnectToMongo(mongoUrl string, mongoUser string, mongoPassword string) (*m
 
 	c, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
-		log.Println("eth-api::ERROR::Error connecting:", err)
 		return nil, err
 	}
 

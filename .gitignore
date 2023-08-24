@@ -318,6 +318,7 @@ public/css/main.css
 Thumbs.db
 
 # Ignore built ts files
+dist/
 dist/**/*
 
 # ignore yarn.lock
@@ -345,8 +346,18 @@ yarn.lock
 # Test binary, built with `go test -c`
 *.test
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
-
 # Go workspace file
 go.work
+
+# General Rust artifacts
+target/
+/target/
+target/**/*
+**/*.rs.bk
+Cargo.lock
+
+# Editor/IDE artifacts
+.vscode/
+.idea/
+*.bak
+
