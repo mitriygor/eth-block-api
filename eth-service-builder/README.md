@@ -14,6 +14,64 @@ services and uses Redis, MongoDB, and RabbitMQ.
 2. Navigate to the project directory
 3. Run the application using the Makefile commands
 
+## Example of an .env file
+
+```bash
+PORT=3000
+
+JSONRPC=2.0
+
+SCHEDULER_INTERVAL=120
+REQUESTER_INTERVAL=10
+
+CACHE_SIZE=2
+MAX_TRANSACTIONS_PER_BLOCK=1000
+
+HTTP_ENDPOINT=https://********************
+HTTP_ENDPOINT_VERSION=***
+HTTP_KEY=********************
+
+ETH_BLOCKS_MONGO=mongodb://eth-blocks-mongo:27017
+ETH_BLOCKS_MONGO_USER=admin
+ETH_BLOCKS_MONGO_PASSWORD=password123
+ETH_BLOCKS_MONGO_DB=eth_blocks
+ETH_BLOCKS_MONGO_COLLECTION=eth_blocks
+ETH_BLOCKS_MONGO_ADDRESS_FILTER=accessList.address
+
+ETH_TRANSACTIONS_MONGO=mongodb://eth-transactions-mongo:27017
+ETH_TRANSACTIONS_MONGO_USER=admin
+ETH_TRANSACTIONS_MONGO_PASSWORD=password123
+ETH_TRANSACTIONS_MONGO_DB=eth_transactions
+ETH_TRANSACTIONS_MONGO_COLLECTION=eth_transactions
+ETH_TRANSACTIONS_MONGO_ADDRESS_FILTER=accessList.address
+
+QUEUE_TOPICS=log.INFO
+QUEUE_MAIN_TOPIC=log.INFO
+
+ETH_BLOCKS_REQUESTER_QUEUE=amqp://guest:guest@eth-blocks-requester-queue
+ETH_BLOCKS_REQUESTER_QUEUE_NAME=eth_blocks
+
+ETH_TRANSACTIONS_REQUESTER_QUEUE=amqp://guest:guest@eth-transactions-requester-queue
+ETH_TRANSACTIONS_REQUESTER_QUEUE_NAME=eth_transactions
+
+ETH_BLOCKS_RECORDER_QUEUE=amqp://guest:guest@eth-blocks-recorder-queue
+ETH_BLOCKS_RECORDER_QUEUE_NAME=eth_blocks
+
+ETH_TRANSACTIONS_SCHEDULER_QUEUE=amqp://guest:guest@eth-transactions-scheduler-queue
+ETH_TRANSACTIONS_SCHEDULER_QUEUE_NAME=eth_transactions
+
+ETH_TRANSACTIONS_RECORDER_QUEUE=amqp://guest:guest@eth-transactions-recorder-queue
+ETH_TRANSACTIONS_RECORDER_QUEUE_NAME=eth_transactions
+
+ETH_REDIS_RECORDER_QUEUE=amqp://guest:guest@eth-redis-recorder-queue
+ETH_REDIS_RECORDER_QUEUE_NAME=eth_redis
+ETH_REDIS_ETH_BLOCKS_RECORDER_QUEUE_NAME=eth_blocks
+ETH_REDIS_ETH_TRANSACTIONS_RECORDER_QUEUE_NAME=eth_transactions
+
+ETH_REDIS=eth-redis:6379
+
+```
+
 ## Usage
 
 ### Makefile Commands
@@ -47,6 +105,8 @@ automatically restarts the application. The Air configuration is stored in the .
 mongodb://localhost:27017/eth_blocks?authSource=admin&readPreference=primary&directConnection=true&ssl=false
 
 ```
+
+
 
 ## MongoDB Replication
 
