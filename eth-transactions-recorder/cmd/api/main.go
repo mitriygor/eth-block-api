@@ -47,7 +47,7 @@ func main() {
 
 	log.Println("EthListener::RabbitMQ:consumer: Consumer is established")
 
-	err = consumer.Listen([]string{"log.INFO", "log.WARNING", "log.ERROR"})
+	err = consumer.Listen([]string{"log.INFO"})
 	if err != nil {
 		log.Printf("eth-transactions-recorder::ERRORRabbitMQ:consume:error: %v\n", err)
 	}

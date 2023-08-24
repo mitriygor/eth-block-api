@@ -8,7 +8,6 @@ COPY eth-helpers /app/eth-helpers
 
 COPY eth-transactions-requester/go.mod /app/eth-transactions-requester
 COPY eth-transactions-requester/.air.toml /app/eth-transactions-requester
-COPY eth-transactions-requester/.env /app/eth-transactions-requester
 
 RUN go mod download
 

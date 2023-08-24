@@ -8,7 +8,6 @@ COPY eth-helpers /app/eth-helpers
 
 COPY eth-transactions-scheduler/go.mod /app/eth-transactions-scheduler
 COPY eth-transactions-scheduler/.air.toml /app/eth-transactions-scheduler
-COPY eth-transactions-scheduler/.env /app/eth-transactions-scheduler
 
 RUN go mod download
 

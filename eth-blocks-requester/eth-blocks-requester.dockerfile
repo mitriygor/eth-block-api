@@ -8,7 +8,6 @@ COPY eth-helpers /app/eth-helpers
 
 COPY eth-blocks-requester/go.mod /app/eth-blocks-requester
 COPY eth-blocks-requester/.air.toml /app/eth-blocks-requester
-COPY eth-blocks-requester/.env /app/eth-blocks-requester
 
 RUN go mod download
 

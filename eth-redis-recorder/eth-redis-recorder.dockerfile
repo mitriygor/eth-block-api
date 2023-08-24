@@ -8,7 +8,6 @@ COPY eth-helpers /app/eth-helpers
 
 COPY eth-redis-recorder/go.mod /app/eth-redis-recorder
 COPY eth-redis-recorder/.air.toml /app/eth-redis-recorder
-COPY eth-redis-recorder/.env /app/eth-redis-recorder
 
 RUN go mod download
 

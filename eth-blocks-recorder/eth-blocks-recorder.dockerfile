@@ -8,7 +8,6 @@ COPY eth-helpers /app/eth-helpers
 
 COPY eth-blocks-recorder/go.mod /app/eth-blocks-recorder
 COPY eth-blocks-recorder/.air.toml /app/eth-blocks-recorder
-COPY eth-blocks-recorder/.env /app/eth-blocks-recorder
 
 RUN go mod download
 

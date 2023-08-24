@@ -8,7 +8,6 @@ COPY eth-helpers /app/eth-helpers
 
 COPY eth-api/go.mod /app/eth-api
 COPY eth-api/.air.toml /app/eth-api
-COPY eth-api/.env /app/eth-api
 
 RUN go mod download
 

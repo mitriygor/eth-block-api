@@ -15,6 +15,7 @@ services:
     volumes:
       - ./../eth-api:/app/eth-api
       - ./../eth-helpers:/app/eth-helpers
+      - ./.env:/app/eth-api/.env
     depends_on:
       - eth-redis # read from
       - eth-blocks-mongo # read from
@@ -38,6 +39,7 @@ services:
     volumes:
       - ./../eth-blocks-requester:/app/eth-blocks-requester
       - ./../eth-helpers:/app/eth-helpers
+      - ./.env:/app/eth-blocks-requester/.env
     depends_on:
       - eth-blocks-requester-queue # consume from
       - eth-blocks-recorder-queue # push to
@@ -74,6 +76,7 @@ services:
     volumes:
       - ./../eth-blocks-recorder:/app/eth-blocks-recorder
       - ./../eth-helpers:/app/eth-helpers
+      - ./.env:/app/eth-blocks-recorder/.env
     depends_on:
       - eth-blocks-recorder-queue # consume from
       - eth-blocks-mongo # write to
@@ -125,6 +128,7 @@ services:
     volumes:
       - ./../eth-blocks-scheduler:/app/eth-blocks-scheduler
       - ./../eth-helpers:/app/eth-helpers
+      - ./.env:/app/eth-blocks-scheduler/.env
     depends_on:
       - eth-redis-recorder-queue # push to
       - eth-blocks-recorder-queue # push to
@@ -147,6 +151,7 @@ services:
     volumes:
       - ./../eth-transactions-requester:/app/eth-transactions-requester
       - ./../eth-helpers:/app/eth-helpers
+      - ./.env:/app/eth-transactions-requester/.env
     depends_on:
       - eth-transactions-requester-queue # consume from
       - eth-transactions-recorder-queue # push to
@@ -184,6 +189,7 @@ services:
     volumes:
       - ./../eth-transactions-recorder:/app/eth-transactions-recorder
       - ./../eth-helpers:/app/eth-helpers
+      - ./.env:/app/eth-transactions-recorder/.env
     depends_on:
       - eth-transactions-recorder-queue # consume from
       - eth-transactions-mongo # write to
@@ -235,6 +241,7 @@ services:
     volumes:
       - ./../eth-transactions-scheduler:/app/eth-transactions-scheduler
       - ./../eth-helpers:/app/eth-helpers
+      - ./.env:/app/eth-transactions-scheduler/.env
     depends_on:
       - eth-transactions-scheduler-queue # consume from
       - eth-transactions-recorder-queue # push to
@@ -271,6 +278,7 @@ services:
     volumes:
       - ./../eth-redis-recorder:/app/eth-redis-recorder
       - ./../eth-helpers:/app/eth-helpers
+      - ./.env:/app/eth-redis-recorder/.env
     depends_on:
       - eth-redis-recorder-queue # consume from
       - eth-redis # write to

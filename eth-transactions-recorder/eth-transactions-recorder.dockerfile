@@ -8,7 +8,6 @@ COPY eth-helpers /app/eth-helpers
 
 COPY eth-transactions-recorder/go.mod /app/eth-transactions-recorder
 COPY eth-transactions-recorder/.air.toml /app/eth-transactions-recorder
-COPY eth-transactions-recorder/.env /app/eth-transactions-recorder
 
 RUN go mod download
 

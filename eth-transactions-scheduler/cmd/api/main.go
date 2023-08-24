@@ -82,7 +82,7 @@ func main() {
 
 	log.Println("eth-blocks-recorder:RabbitMQ:consumer: Consumer is established")
 
-	err = consumer.Listen([]string{"log.INFO", "log.WARNING", "log.ERROR"})
+	err = consumer.Listen([]string{"log.INFO"})
 	if err != nil {
 		log.Printf("eth-blocks-recorder::ERROR::RabbitMQ:consume:error: %v\n", err)
 	}

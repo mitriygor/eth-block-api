@@ -8,7 +8,6 @@ COPY eth-helpers /app/eth-helpers
 
 COPY eth-blocks-scheduler/go.mod /app/eth-blocks-scheduler
 COPY eth-blocks-scheduler/.air.toml /app/eth-blocks-scheduler
-COPY eth-blocks-scheduler/.env /app/eth-blocks-scheduler
 
 RUN go mod download
 
