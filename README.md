@@ -1,6 +1,6 @@
 # Eth Blocks API
 
-![Architecture Diagram](./assets/diagrams/eth-block-service.drawio.png)
+![Architecture Diagram](./assets/diagrams/eth-block-service.drawio-full.png)
 
 
 
