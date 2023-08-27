@@ -1,4 +1,4 @@
-# Eth Blocks Service
+# Ethereum Blocks Service
 
 The project is a service for fetching and preserving Ethereum blocks and their transactions
 
@@ -19,7 +19,7 @@ Additional Features:
 
 
 Infrastructure:
-* Dockerization: The entire system, comprised of 20 elements, is containerized
+* [Dockerization](https://github.com/mitriygor/eth-block-api/tree/main/eth-service-builder): The entire system, comprised of 20 elements, is containerized
 * Makefile: The entire system can be launched with a single command
 * Live-Reload: Each microservice automatically reloads upon any changes
 
