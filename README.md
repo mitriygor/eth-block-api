@@ -37,7 +37,7 @@ Bonus:
 
 
 
-![Architecture Diagram](./assets/diagrams/eth-block-service.drawio-full.png)
+![Architecture Diagram](./assets/diagrams/eth-block-service-8.png)
 
 
 
