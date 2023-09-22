@@ -1,0 +1,40 @@
+body {
+    background: #000;
+}
+
+pre.bg-dark {
+    background: rgb(0, 0, 30) !important;
+}
+
+form {
+    min-height: 100px;
+    margin: 20px 0 0 0;
+}
+
+.eth-img {
+    width: 600px;
+    height: 300px;
+    background-image: url('../images/eth3.gif');
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center center;
+    opacity: .3;
+    position: relative;
+    margin: 0 auto -180px auto;
+    z-index: -100;
+}
+
+h1.text-body-emphasis {
+    opacity: .2;
+    color: #fff !important;
+}
+
+.py-5 {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+.refresh-button {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}

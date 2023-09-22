@@ -1,81 +1,107 @@
-use gloo_net::http::{Headers, Request};
-use serde::{Deserialize, Serialize};
-use serde_json;
-use wasm_bindgen::JsValue;
-use web_sys::HtmlInputElement;
-
 use yew::prelude::*;
-
-use crate::components::input::InputField;
-
-#[derive(Clone, PartialEq, Properties, Debug, Default, Serialize, Deserialize)]
-pub struct EthForm {
-    pub eth_block_id: String,
-    pub eth_transaction_hash: String,
-    pub eth_event_address: String,
-}
+use crate::sections::blocks::Blocks;
+use crate::sections::transactions::Transactions;
+use crate::sections::events::Events;
+use crate::sections::latests::Latests;
 
 #[function_component(Home)]
 pub fn home() -> Html {
-    let eth_form = use_state(|| EthForm::default());
-
-    let eth_block_id = use_node_ref();
-    let eth_transaction_hash_ref = use_node_ref();
-    let eth_event_address_ref = use_node_ref();
-
-    log::info!("eth_form {:?}", &eth_form.clone());
-    let onsubmit = {
-        let eth_form = eth_form.clone();
-
-        let eth_block_id = eth_block_id.clone();
-        let eth_transaction_hash_ref = eth_transaction_hash_ref.clone();
-        let eth_event_address_ref = eth_event_address_ref.clone();
-
-        Callback::from(move |event: SubmitEvent| {
-            event.prevent_default();
-            log::info!("eth_form {:?}", &eth_form.clone());
-
-            let eth_block_id = eth_block_id.cast::<HtmlInputElement>().unwrap().value();
-            let eth_transaction_hash = eth_transaction_hash_ref.cast::<HtmlInputElement>().unwrap().value();
-            let eth_event_address = eth_event_address_ref.cast::<HtmlInputElement>().unwrap().value();
-
-            let eth_form = EthForm {
-                eth_block_id,
-                eth_transaction_hash,
-                eth_event_address,
-            };
-
-            log::info!("eth_form {:?}", &eth_form);
-
-            wasm_bindgen_futures::spawn_local(async move {
-                let post_request = Request::post("#")
-                    .headers({
-                        let headers = Headers::new();
-                        headers
-                            // .append(name, value)
-                            .set("Content-Type", "application/json");
-                        headers
-                    })
-                    .body(JsValue::from(
-                        serde_json::to_string(&eth_form).unwrap(),
-                    ))
-                    .send()
-                    .await
-                    .unwrap();
-
-                log::info!("post_request {:?}", &post_request);
-            });
-        })
-    };
+    let active_tab = use_state(|| String::from("block"));
+    let set_active_tab = Callback::from({
+        let active_tab = active_tab.clone();
+        move |tab: String| active_tab.set(tab)
+    });
 
     html! {
-        <main class="home">
-            <form {onsubmit} class="eth-form">
-                <InputField input_node_ref={eth_block_id} label={"Block Identifier".to_owned()} name={"eth_block_id".clone()} field_type={"text".clone()} />
-                <InputField input_node_ref={eth_transaction_hash_ref} label={"Transaction Hash".to_owned()} name={"eth_transaction_hash".clone()} field_type={"text".clone()}  />
-                <InputField input_node_ref={eth_event_address_ref} label={"Event Address".to_owned()} name={"eth_event_address".clone()} field_type={"text".clone()}  />
-                <button type="submit" class="button button-primary">{"Submit"}</button>
-            </form>
+        <main class="container">
+            <div class="px-4 py-5 my-5 text-center">
+                <div class="eth-img"></div>
+                <h1 class="display-5 fw-bold text-body-emphasis">{"Ethereum Block Service"}</h1>
+            </div>
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col">
+                        <nav>
+                            <div class="nav nav-tabs" id="nav-tab" role="tablist">
+                                <button
+                                    class={if *active_tab == "block" { "nav-link active" } else { "nav-link" }}
+                                    id="nav-block-tab"
+                                    type="button"
+                                    role="tab"
+                                    onclick={Callback::from({
+                                    let set_active_tab = set_active_tab.clone();
+                                    move |_| set_active_tab.emit(String::from("block"))
+                                })}>
+                                        {"Block"}
+                                </button>
+                                <button
+                                    class={if *active_tab == "transaction" { "nav-link active" } else { "nav-link" }}
+                                    id="nav-block-tab"
+                                    type="button"
+                                    role="tab"
+                                    onclick={Callback::from({
+                                    let set_active_tab = set_active_tab.clone();
+                                    move |_| set_active_tab.emit(String::from("transaction"))
+                                })}>
+                                        {"Transaction"}
+                                </button>
+                                <button
+                                    class={if *active_tab == "event" { "nav-link active" } else { "nav-link" }}
+                                    id="nav-block-tab"
+                                    type="button"
+                                    role="tab"
+                                    onclick={Callback::from({
+                                    let set_active_tab = set_active_tab.clone();
+                                    move |_| set_active_tab.emit(String::from("event"))
+                                })}>
+                                        {"Event"}
+                                </button>
+                                <button
+                                    class={if *active_tab == "latest" { "nav-link active" } else { "nav-link" }}
+                                    id="nav-block-tab"
+                                    type="button"
+                                    role="tab"
+                                    onclick={Callback::from({
+                                    let set_active_tab = set_active_tab.clone();
+                                    move |_| set_active_tab.emit(String::from("latest"))
+                                })}>
+                                        {"Latest Blocks"}
+                                </button>
+                            </div>
+                        </nav>
+                        <div class="tab-content" id="nav-tabContent">
+                            <div
+                                class={if *active_tab == "block" { "tab-pane fade show active" } else { "tab-pane fade" }}
+                                id="nav-block"
+                                role="tabpanel"
+                                tabindex="0">
+                                    <Blocks />
+                            </div>
+                            <div
+                                class={if *active_tab == "transaction" { "tab-pane fade show active" } else { "tab-pane fade" }}
+                                id="nav-transaction"
+                                role="tabpanel"
+                                tabindex="1">
+                                    <Transactions />
+                            </div>
+                            <div
+                                class={if *active_tab == "event" { "tab-pane fade show active" } else { "tab-pane fade" }}
+                                id="nav-event"
+                                role="tabpanel"
+                                tabindex="2">
+                                    <Events />
+                            </div>
+                            <div
+                                class={if *active_tab == "latest" { "tab-pane fade show active" } else { "tab-pane fade" }}
+                                id="nav-latest"
+                                role="tabpanel"
+                                tabindex="3">
+                                    <Latests />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </main>
     }
 }

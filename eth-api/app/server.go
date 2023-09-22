@@ -9,6 +9,7 @@ import (
 	"eth-helpers/mongo_helper"
 	"github.com/go-redis/redis/v8"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"go.mongodb.org/mongo-driver/mongo"
 	"log"
 )
@@ -46,6 +47,12 @@ func NewApp(redisHost string, ethBlocksMongoCredentials MongoCredentials, ethTra
 	ethTransactionHandler := initEthTransactionHandler(ethTransactionMongoClient, redisClient, ethTransactionsRequesterCredentials.Host, ethTransactionsRequesterCredentials.Name)
 
 	app := fiber.New()
+
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "*",
+		AllowMethods: "GET,POST,PUT,DELETE",
+		AllowHeaders: "*",
+	}))
 
 	app.Use(middleware.LoggingMiddleware)
 

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"eth-api/app/services"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"log"
 )
@@ -17,6 +18,8 @@ func NewEthBlockHandler(service services.EthBlockService) *EthBlockHandler {
 }
 
 func (h *EthBlockHandler) GetLatestEthBlocksHandler(c *fiber.Ctx) error {
+
+	fmt.Printf("eth-api::EthBlockHandler::GetLatestEthBlocksHandler")
 
 	ethBlock, err := h.EthBlockService.GetLatestEthBlocks()
 

@@ -21,16 +21,19 @@ func main() {
 	schedulerInterval, err := strconv.Atoi(os.Getenv("SCHEDULER_INTERVAL"))
 	if err != nil {
 		log.Println("eth-blocks-scheduler::ERROR::Error converting schedulerInterval to integer")
+		schedulerInterval = 120
 	}
 
 	requesterInterval, err := strconv.Atoi(os.Getenv("REQUESTER_INTERVAL"))
 	if err != nil {
 		log.Println("eth-blocks-scheduler::ERROR::Error converting interval to integer")
+		schedulerInterval = 10
 	}
 
 	cacheSize, err := strconv.Atoi(os.Getenv("CACHE_SIZE"))
 	if err != nil {
 		log.Println("eth-blocks-scheduler::ERROR::Error converting cacheSize to integer")
+		cacheSize = 50
 	}
 
 	// Queue to which the service will send the blocks for further recording to the database

@@ -23,11 +23,15 @@ func NewEthBlockService(repo repositories.EthBlockRepository) EthBlockService {
 }
 
 func (ebs *ethBlockService) GetLatestEthBlocks() ([]*models.BlockDetails, error) {
+	log.Printf("eth-api::EthBlockService::GetLatestEthBlocks")
 
-	log.Printf("eth-api:GetLatestEthBlocks")
+	latestBlockDetails, err := ebs.ethBlockRepo.GetLatestEthBlocks()
 
-	ebs.ethBlockRepo.GetLatestEthBlocks()
-	return nil, nil
+	if err != nil || len(latestBlockDetails) == 0 {
+		return nil, err
+	}
+
+	return latestBlockDetails, nil
 }
 
 func (ebs *ethBlockService) GetBlockByIdentifierService(blockIdentifier string) (*models.BlockDetails, error) {
