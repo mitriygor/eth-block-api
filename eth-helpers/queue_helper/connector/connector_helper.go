@@ -18,7 +18,6 @@ func ConnectToQueue(host string) (*amqp.Connection, error) {
 			log.Printf("eth-api::ERROR::ConnectToQueue::err: %v\n", err)
 			counts++
 		} else {
-			log.Println("eth-api::ConnectToQueue::CONNECTED")
 			connection = c
 			break
 		}
@@ -29,7 +28,6 @@ func ConnectToQueue(host string) (*amqp.Connection, error) {
 		}
 
 		backOff = time.Duration(math.Pow(float64(counts), 2)) * time.Second
-		log.Printf("eth-api::ERROR::ConnectToQueue::backOff: %v\n", backOff)
 		time.Sleep(backOff)
 		continue
 	}

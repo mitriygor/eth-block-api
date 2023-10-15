@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"eth-blocks-requester/internal/eth_block"
+	"eth-blocks-requester/pkg/logger"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"log"
 )
 
 func Consume(ch *amqp.Channel, name string, service eth_block.Service) {
@@ -18,7 +18,7 @@ func Consume(ch *amqp.Channel, name string, service eth_block.Service) {
 		nil,
 	)
 	if err != nil {
-		log.Fatalf("%s: %s", "Failed to declare a queue", err)
+		logger.Error("eth-blocks-requester::Failed to declare a queue", "error", err)
 	}
 
 	msgs, err := ch.Consume(
@@ -31,7 +31,7 @@ func Consume(ch *amqp.Channel, name string, service eth_block.Service) {
 		nil,
 	)
 	if err != nil {
-		log.Fatalf("%s: %s", "Failed to register a consumer", err)
+		logger.Error("eth-blocks-requester::Failed to register a consumer", "error", err)
 	}
 
 	for d := range msgs {
@@ -41,13 +41,8 @@ func Consume(ch *amqp.Channel, name string, service eth_block.Service) {
 
 		err := json.Unmarshal(d.Body, &bi)
 		if err != nil {
-			log.Printf("eth-blocks-requester::d.Body: %v\n", d.Body)
-			log.Printf("eth-blocks-requester::[]byte(d.Body): %v\n", d.Body)
-			log.Printf("eth-blocks-requester::string([]byte(d.Body)): %v\n", string(d.Body))
-			log.Fatalf("eth-blocks-requester::Error unmarshaling JSON: %v\n", err)
+			logger.Error("eth-blocks-requester::Error unmarshaling JSON", "error", err)
 		}
-
-		log.Printf("eth-blocks-requester::bi: %v\n", bi)
 
 		blockResponse, err := service.GetEthBlock(bi.Identifier, bi.IdentifierType)
 
@@ -69,7 +64,7 @@ func Consume(ch *amqp.Channel, name string, service eth_block.Service) {
 				Body:          []byte(response),
 			})
 		if err != nil {
-			log.Printf("eth-blocks-requester::Failed to publish a message: %s", err)
+			logger.Error("eth-blocks-requester::Failed to publish a message", "error", err)
 		}
 	}
 }

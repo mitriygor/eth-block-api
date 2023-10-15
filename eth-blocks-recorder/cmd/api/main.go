@@ -3,17 +3,31 @@ package main
 import (
 	"eth-blocks-recorder/event"
 	"eth-blocks-recorder/internal/eth_block"
+	"eth-blocks-recorder/pkg/logger"
 	"eth-helpers/mongo_helper"
 	"eth-helpers/queue_helper/connector"
 	"github.com/joho/godotenv"
-	"log"
+	amqp "github.com/rabbitmq/amqp091-go"
+	"go.uber.org/zap"
 	"os"
 )
 
 func main() {
-	err := godotenv.Load()
+	// Initialize the logger
+	err := logger.Initialize("info")
 	if err != nil {
-		log.Println("eth-blocks-recorder:ERROR:Error loading .env file")
+		panic(err)
+	}
+	defer func(Log *zap.SugaredLogger) {
+		err := Log.Sync()
+		if err != nil {
+			logger.Error("eth-blocks-recorder:ERROR:sync", "error", err)
+		}
+	}(logger.Log)
+
+	err = godotenv.Load()
+	if err != nil {
+		logger.Error("eth-blocks-recorder:ERROR:Error loading .env file", "error", err)
 	}
 
 	ethBlocksMongo := os.Getenv("ETH_BLOCKS_MONGO")
@@ -22,18 +36,22 @@ func main() {
 
 	ethBlocksMongoClient, err := mongo_helper.ConnectToMongo(ethBlocksMongo, ethBlocksMongoUser, ethBlocksMongoPassword)
 	if err != nil {
-		log.Panic(err)
+		logger.Error("eth-blocks-recorder:ERROR:MongoDB connect error", "error", err)
 	}
 
 	ethBlocksRecorderQueue := os.Getenv("ETH_BLOCKS_RECORDER_QUEUE")
 	ethBlocksRecorderQueueConn, err := connector.ConnectToQueue(ethBlocksRecorderQueue)
 	if err != nil {
-		log.Printf("eth-blocks-recorder:ERROR: RabbitMQ connect error: %v\n", err)
+		logger.Error("eth-blocks-recorder:ERROR: RabbitMQ connect error", "error", err)
 		os.Exit(1)
 	}
 
-	log.Println("eth-blocks-recorder::RabbitMQ: Connected to RabbitMQ")
-	defer ethBlocksRecorderQueueConn.Close()
+	defer func(ethBlocksRecorderQueueConn *amqp.Connection) {
+		err := ethBlocksRecorderQueueConn.Close()
+		if err != nil {
+			logger.Error("eth-blocks-recorder:ERROR: RabbitMQ connection close error", "error", err)
+		}
+	}(ethBlocksRecorderQueueConn)
 
 	ethBlockRepo := eth_block.NewEthBlockRepository(ethBlocksRecorderQueueConn, ethBlocksMongoClient)
 	ethBlockService := eth_block.NewEthBlockService(ethBlockRepo)
@@ -41,14 +59,12 @@ func main() {
 	consumer, err := event.NewConsumer(ethBlocksRecorderQueueConn, ethBlockService)
 
 	if err != nil {
-		log.Println("eth-blocks-recorder:ERROR: RabbitMQ consumer panic")
+		logger.Error("eth-blocks-recorder:ERROR: RabbitMQ consumer panic", "error", err)
 		panic(err)
 	}
 
-	log.Println("eth-blocks-recorder:RabbitMQ:consumer: Consumer is established")
-
 	err = consumer.Listen([]string{"log.INFO"})
 	if err != nil {
-		log.Printf("eth-blocks-recorder::ERROR::RabbitMQ:consume:error: %v\n", err)
+		logger.Error("eth-blocks-recorder:ERROR: RabbitMQ consume error", "error", err)
 	}
 }

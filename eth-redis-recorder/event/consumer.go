@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"eth-redis-recorder/internal/eth_block"
 	"eth-redis-recorder/internal/eth_transaction"
-	"fmt"
+	"eth-redis-recorder/pkg/logger"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"log"
 )
 
 type Consumer struct {
@@ -24,6 +23,7 @@ func NewConsumer(conn *amqp.Connection, ethBlockService eth_block.Service, ethTr
 
 	err := consumer.setup()
 	if err != nil {
+		logger.Error("eth-redis-recorder::ERROR::NewConsumer::error setting up consumer", "error", err)
 		return Consumer{}, err
 	}
 
@@ -40,45 +40,47 @@ func (consumer *Consumer) setup() error {
 }
 
 func (consumer *Consumer) Listen(topics []string) error {
-	log.Printf("eth-redis-recorder::Listen::topics: %v\n", topics)
-
 	ch, err := consumer.conn.Channel()
 	if err != nil {
-		log.Printf("eth-redis-recorder::ERROR::Listen::error getting channel: %v\n", err.Error())
+		logger.Error("eth-redis-recorder::ERROR::Listen::error getting channel", "error", err)
 		return err
 	}
-	defer ch.Close()
+	defer func(ch *amqp.Channel) {
+		err := ch.Close()
+		if err != nil {
+			logger.Error("eth-redis-recorder::ERROR::Listen::error closing channel", "error", err)
+		}
+	}(ch)
 
 	q, err := declareRandomQueue(ch)
 	if err != nil {
-		log.Printf("eth-redis-recorder::ERROR::Listen::error declaring queue: %v\n", err.Error())
+		logger.Error("eth-redis-recorder::ERROR::Listen::error declaring queue", "error", err)
 		return err
 	}
 
 	for _, s := range topics {
-		ch.QueueBind(
+		err := ch.QueueBind(
 			q.Name,
 			s,
 			"eth_redis",
 			false,
 			nil,
 		)
+		if err != nil {
+			logger.Error("eth-redis-recorder::ERROR::Listen::error binding queue", "error", err)
+			return err
+		}
 
 		if err != nil {
-			log.Printf("eth-redis-recorder::ERROR::Listen::error binding queue: %v\n", err.Error())
+			logger.Error("eth-redis-recorder::ERROR::Listen::error binding queue", "error", err)
 			return err
 		}
 	}
 
-	messages, err := ch.Consume(q.Name, "", true, false, false, false, nil)
+	_, err = ch.Consume(q.Name, "", true, false, false, false, nil)
 	if err != nil {
-		log.Printf("eth-redis-recorder::ERROR::Listen::error consuming queue: %v\n", err.Error())
+		logger.Error("eth-redis-recorder::ERROR::Listen::error consuming queue", "error", err)
 		return err
-	}
-
-	for d := range messages {
-		log.Printf("eth-redis-recorder::Listen::message: %v\n", d.Body)
-
 	}
 
 	return nil
@@ -87,35 +89,33 @@ func (consumer *Consumer) Listen(topics []string) error {
 func (consumer *Consumer) process(data string) {
 	var result map[string]interface{}
 	if err := json.Unmarshal([]byte(data), &result); err != nil {
-		log.Printf("eth-redis-recorder::process::ERROR::Unmarshal: %v", err)
+		logger.Error("eth-redis-recorder::process::ERROR::Unmarshal", "error", err)
 		return
 	}
 
 	if _, ok := result["transactions"]; ok {
 		var bd eth_block.BlockDetails
 		if err := json.Unmarshal([]byte(data), &bd); err != nil {
-			log.Printf("eth-redis-recorder::process::ERROR::Unmarshal::BlockDetails: %v", err)
+			logger.Error("eth-redis-recorder::process::ERROR::Unmarshal::BlockDetails", "error", err)
 		} else {
 			consumer.handleBlock(bd)
 		}
 	} else if _, ok := result["transactionIndex"]; ok {
 		var et eth_transaction.EthTransaction
 		if err := json.Unmarshal([]byte(data), &et); err != nil {
-			log.Printf("eth-redis-recorder::process::ERROR::Unmarshal::EthTransaction: %v", err)
+			logger.Error("eth-redis-recorder::process::ERROR::Unmarshal::EthTransaction", "error", err)
 		} else {
 			consumer.handleTransaction(et)
 		}
 	} else {
-		fmt.Println("eth-redis-recorder::process::ERROR::Unknown type")
+		logger.Error("eth-redis-recorder::process::ERROR::Unknown type")
 	}
 }
 
 func (consumer *Consumer) handleBlock(bd eth_block.BlockDetails) {
-	log.Printf("eth-redis-recorder::HandleBlock::block: %v\n", bd)
 	consumer.ethBlockService.AddBlockService(bd)
 }
 
 func (consumer *Consumer) handleTransaction(et eth_transaction.EthTransaction) {
-	log.Printf("eth-redis-recorder::HandleTransaction::block: %v\n", et)
 	consumer.ethTransactionService.AddTransactionService(et)
 }

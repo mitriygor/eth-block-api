@@ -3,8 +3,8 @@ package eth_transaction
 import (
 	"context"
 	"encoding/json"
+	"eth-transactions-scheduler/pkg/logger"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"log"
 )
 
 type Repository interface {
@@ -30,22 +30,12 @@ func NewEthTransactionRepository(ethTransactionsRecorderQueueCh *amqp.Channel, e
 
 func (ebr *EthTransactionRepository) PushEthTransaction(et EthTransaction) error {
 
-	log.Printf("eth-transactions-scheduler::PushEthTransaction::et: %v\n", et)
-
 	var transaction string
 
 	jsonStr, err := json.MarshalIndent(et, "", "  ")
-
-	log.Printf("eth-transactions-scheduler::PushEthTransaction::jsonStr: %v\n", jsonStr)
-
 	if err == nil {
 		transaction = string(jsonStr)
 	}
-
-	log.Printf("eth-transactions-scheduler::PushEthTransaction::err: %v\n", err)
-	log.Printf("eth-transactions-scheduler::PushEthTransaction::transaction: %v\n", transaction)
-	log.Printf("eth-transactions-scheduler::PushEthTransaction::jsonStr: %v\n", jsonStr)
-	log.Printf("eth-transactions-scheduler::PushEthTransaction::et: %v\n", et)
 
 	err = ebr.ethTransactionsRecorderQueueCh.PublishWithContext(context.TODO(),
 		ebr.ethTransactionsRecorderQueueName,
@@ -60,7 +50,7 @@ func (ebr *EthTransactionRepository) PushEthTransaction(et EthTransaction) error
 	)
 
 	if err != nil {
-		log.Printf("eth-transactions-scheduler::PushEthTransaction::error publishing message: %v\n", err.Error())
+		logger.Error("eth-transactions-scheduler:ERROR:PushEthTransaction", "error", err)
 	}
 
 	err = ebr.ethRedisRecorderQueueCh.PublishWithContext(context.TODO(),
@@ -76,7 +66,7 @@ func (ebr *EthTransactionRepository) PushEthTransaction(et EthTransaction) error
 	)
 
 	if err != nil {
-		log.Printf("eth-transactions-scheduler::PushEthTransaction::error publishing message: %v\n", err.Error())
+		logger.Error("eth-transactions-scheduler:ERROR:PushEthTransaction", "error", err)
 	}
 
 	return err

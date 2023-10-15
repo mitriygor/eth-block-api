@@ -3,8 +3,8 @@ package eth_transaction
 import (
 	"context"
 	"encoding/json"
+	"eth-transactions-requester/pkg/logger"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"log"
 )
 
 type Repository interface {
@@ -25,21 +25,14 @@ func NewEthTransactionRepository(ethTransactionsRecorderQueueCh *amqp.Channel, e
 }
 
 func (ebr *EthTransactionRepository) PushEthTransaction(et EthTransaction) error {
-
-	log.Printf("eth-transactions-requester::PushEthTransaction::et: %v\n", et)
-
 	var transaction string
-
 	jsonStr, err := json.MarshalIndent(et, "", "  ")
-
-	log.Printf("eth-transactions-requester::PushEthTransaction::jsonStr: %v\n", jsonStr)
 
 	if err == nil {
 		transaction = string(jsonStr)
+	} else {
+		logger.Error("eth-transactions-requester::PushEthTransaction::json.MarshalIndent", "err", err)
 	}
-
-	log.Printf("eth-transactions-requester::PushEthTransaction::err: %v\n", err)
-	log.Printf("eth-transactions-requester::PushEthTransaction::transaction: %v\n", transaction)
 
 	err = ebr.ethTransactionsRecorderQueueCh.PublishWithContext(context.TODO(),
 		ebr.ethTransactionsRecorderQueueName,
@@ -54,7 +47,7 @@ func (ebr *EthTransactionRepository) PushEthTransaction(et EthTransaction) error
 	)
 
 	if err != nil {
-		log.Printf("eth-transactions-requester::PushEthTransaction::error publishing message: %v\n", err.Error())
+		logger.Error("eth-transactions-requester::PushEthTransaction::ch.PublishWithContext", "err", err, "transaction", transaction)
 	}
 
 	return err

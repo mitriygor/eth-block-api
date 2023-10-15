@@ -5,27 +5,40 @@ import (
 	"eth-redis-recorder/event"
 	"eth-redis-recorder/internal/eth_block"
 	"eth-redis-recorder/internal/eth_transaction"
+	"eth-redis-recorder/pkg/logger"
 	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
-	"log"
+	amqp "github.com/rabbitmq/amqp091-go"
+	"go.uber.org/zap"
 	"os"
 	"strconv"
 )
 
 func main() {
-	err := godotenv.Load()
+	err := logger.Initialize("info")
 	if err != nil {
-		log.Println("eth-redis-recorder::ERROR::Error loading .env file")
+		panic(err)
+	}
+	defer func(Log *zap.SugaredLogger) {
+		err := Log.Sync()
+		if err != nil {
+			logger.Error("eth-blocks-recorder:ERROR:sync", "error", err)
+		}
+	}(logger.Log)
+
+	err = godotenv.Load()
+	if err != nil {
+		logger.Error("eth-redis-recorder::ERROR::Error loading .env file", "error", err)
 	}
 
 	cacheSize, err := strconv.Atoi(os.Getenv("CACHE_SIZE"))
 	if err != nil {
-		log.Println("eth-blocks-scheduler::ERROR::Error converting interval to integer")
+		logger.Error("eth-redis-recorder::ERROR::Error converting interval to integer", "error", err)
 	}
 
 	maxTransactionsPerEthBlock, err := strconv.Atoi(os.Getenv("MAX_TRANSACTIONS_PER_BLOCK"))
 	if err != nil {
-		log.Println("eth-blocks-scheduler::ERROR::Error converting interval to integer")
+		logger.Error("eth-redis-recorder::ERROR::Error converting interval to integer", "error", err)
 	}
 
 	redisEthBlocksQueueName := os.Getenv("ETH_REDIS_ETH_BLOCKS_RECORDER_QUEUE_NAME")
@@ -34,12 +47,16 @@ func main() {
 	ethRedisRecorderQueue := os.Getenv("ETH_REDIS_RECORDER_QUEUE")
 	ethRedisRecorderQueueConn, err := connector.ConnectToQueue(ethRedisRecorderQueue)
 	if err != nil {
-		log.Printf("eth-redis-recorder::ERROR::RabbitMQ:connect:error: %v\n", err)
+		logger.Error("eth-redis-recorder::ERROR::RabbitMQ:connect:error", "error", err)
 		os.Exit(1)
 	}
 
-	log.Println("eth-redis-recorder::RabbitMQ: Connected to RabbitMQ")
-	defer ethRedisRecorderQueueConn.Close()
+	defer func(ethRedisRecorderQueueConn *amqp.Connection) {
+		err := ethRedisRecorderQueueConn.Close()
+		if err != nil {
+			logger.Error("eth-redis-recorder::ERROR::RabbitMQ:connection:close:error", "error", err)
+		}
+	}(ethRedisRecorderQueueConn)
 
 	redisHost := os.Getenv("ETH_REDIS")
 
@@ -58,14 +75,12 @@ func main() {
 	consumer, err := event.NewConsumer(ethRedisRecorderQueueConn, ethBlockService, ethTransactionService)
 
 	if err != nil {
-		log.Println("eth-redis-recorder::ERROR::RabbitMQ:consumer:PANIC")
+		logger.Error("eth-redis-recorder::ERROR::RabbitMQ:consumer:PANIC", "error", err)
 		panic(err)
 	}
 
-	log.Println("eth-redis-recorder::RabbitMQ:consumer: Consumer is established")
-
 	err = consumer.Listen([]string{"log.INFO"})
 	if err != nil {
-		log.Printf("eth-redis-recorder::ERROR::RabbitMQ:consume:error: %v\n", err)
+		logger.Error("eth-redis-recorder::ERROR::RabbitMQ:consume:error", "error", err)
 	}
 }

@@ -3,8 +3,8 @@ package eth_block
 import (
 	"context"
 	"encoding/json"
+	"eth-blocks-requester/pkg/logger"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"log"
 )
 
 type Repository interface {
@@ -46,7 +46,7 @@ func (ebr *EthBlockRepository) PushEthBlock(bd BlockDetails) error {
 	)
 
 	if err != nil {
-		log.Printf("eth-blocks-requester::ERROR::Push::error publishing message: %v\n", err.Error())
+		logger.Error("eth-blocks-requester::ERROR::Push::error publishing message", "error", err)
 	}
 
 	return err

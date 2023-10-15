@@ -3,8 +3,8 @@ package event
 import (
 	"encoding/json"
 	"eth-transactions-scheduler/internal/eth_transaction"
+	"eth-transactions-scheduler/pkg/logger"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"log"
 	"time"
 )
 
@@ -23,6 +23,7 @@ func NewConsumer(conn *amqp.Connection, ethTransactionsService eth_transaction.S
 
 	err := consumer.setup()
 	if err != nil {
+		logger.Error("eth-transactions-scheduler:ERROR:NewConsumer", "error", err)
 		return Consumer{}, err
 	}
 
@@ -39,44 +40,51 @@ func (consumer *Consumer) setup() error {
 }
 
 func (consumer *Consumer) Listen(topics []string) error {
-	log.Printf("eth-blocks-recorder::Listen::topics: %v\n", topics)
 
 	ch, err := consumer.conn.Channel()
 	if err != nil {
-		log.Printf("eth-blocks-recorder::ERROR::Listen::error getting channel: %v\n", err.Error())
+		logger.Error("eth-blocks-recorder:ERROR:Listen", "error", err)
 		return err
 	}
-	defer ch.Close()
+	defer func(ch *amqp.Channel) {
+		err := ch.Close()
+		if err != nil {
+			logger.Error("eth-blocks-recorder:ERROR:Listen", "error", err)
+		}
+	}(ch)
 
 	q, err := declareRandomQueue(ch)
 	if err != nil {
-		log.Printf("eth-blocks-recorder::ERROR::Listen::error declaring queue: %v\n", err.Error())
+		logger.Error("eth-blocks-recorder:ERROR:Listen", "error", err)
 		return err
 	}
 
 	for _, s := range topics {
-		log.Printf("eth-blocks-recorder::Listen::binding queue: %v\n", q.Name)
-		ch.QueueBind(
+		err := ch.QueueBind(
 			q.Name,
 			s,
 			"eth_transactions",
 			false,
 			nil,
 		)
+		if err != nil {
+			logger.Error("eth-blocks-recorder:ERROR:Listen", "error", err)
+			return err
+		}
 
 		if err != nil {
-			log.Printf("eth-blocks-recorder::ERROR::Listen::error binding queue: %v\n", err.Error())
+			logger.Error("eth-blocks-recorder:ERROR:Listen", "error", err)
 			return err
 		}
 	}
 
 	messages, err := ch.Consume(q.Name, "", true, false, false, false, nil)
 	if err != nil {
-		log.Printf("eth-transactions-scheduler::Listen::ERROR::Listen::error consuming queue: %v\n", err.Error())
+		logger.Error("eth-blocks-recorder:ERROR:Listen", "error", err)
 	}
 
 	for d := range messages {
-		log.Printf("eth-blocks-recorder::Listen::received message: %v\n", string(d.Body))
+		logger.Error("eth-blocks-recorder:Listen", "message", string(d.Body))
 		consumer.HandlePayload(d.Body)
 	}
 
@@ -84,22 +92,16 @@ func (consumer *Consumer) Listen(topics []string) error {
 }
 
 func (consumer *Consumer) HandlePayload(transactions []byte) {
-
-	log.Printf("eth-transactions-scheduler::HandlePayload::transactionsHashes: %v\n", transactions)
-
 	var transactionsHashes []string
 	err := json.Unmarshal(transactions, &transactionsHashes)
 	if err != nil {
-		log.Printf("eth-blocks-recorder::ERROR::Listen::error consuming queue: %v\n", err.Error())
+		logger.Error("eth-blocks-recorder:ERROR:Listen", "error", err)
 	}
 
 	for _, hash := range transactionsHashes {
-
-		log.Printf("eth-transactions-scheduler::HandlePayload::hash: %v\n", hash)
-
 		et, err := consumer.ethTransactionsService.GetEthTransaction(hash)
 		if err != nil {
-			log.Printf("eth-transactions-scheduler::ERROR::HandlePayload::GetEthTransaction::error: %v\n", err)
+			logger.Error("eth-transactions-scheduler::ERROR::HandlePayload::GetEthTransaction::error", "error", err)
 		}
 		consumer.ethTransactionsService.PushEthTransactionService(*et)
 

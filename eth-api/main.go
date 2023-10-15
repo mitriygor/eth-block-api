@@ -2,16 +2,28 @@ package main
 
 import (
 	"eth-api/app"
+	"eth-api/app/helpers/logger"
 	"github.com/joho/godotenv"
-	"log"
+	"go.uber.org/zap"
 	"os"
 )
 
 func main() {
-	err := godotenv.Load()
-
+	// Initialize the logger
+	err := logger.Initialize("info")
 	if err != nil {
-		log.Printf("eth-api::ERROR::Error loading .env file: %v\n", err)
+		panic(err)
+	}
+	defer func(Log *zap.SugaredLogger) {
+		err := Log.Sync()
+		if err != nil {
+			logger.Error("eth-api::main::ERROR::sync", "error", err)
+		}
+	}(logger.Log)
+
+	err = godotenv.Load()
+	if err != nil {
+		logger.Error("eth-api::main::ERROR::env", "error", err)
 	}
 
 	redisHost := os.Getenv("ETH_REDIS")
@@ -54,6 +66,6 @@ func main() {
 
 	err = app.Listen(":" + port)
 	if err != nil {
-		log.Printf("eth-api::ERROR::Error launch server: %v\n", err)
+		logger.Error("eth-api::main::ERROR::launch", "error", err)
 	}
 }

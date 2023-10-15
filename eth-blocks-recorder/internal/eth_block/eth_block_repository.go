@@ -2,9 +2,9 @@ package eth_block
 
 import (
 	"context"
+	"eth-blocks-recorder/pkg/logger"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.mongodb.org/mongo-driver/mongo"
-	"log"
 )
 
 type Repository interface {
@@ -29,7 +29,7 @@ func (ebr *EthBlockRepository) InsertEthBlock(bd BlockDetails) error {
 
 	_, err := collection.InsertOne(context.TODO(), bd)
 	if err != nil {
-		log.Printf("eth-blocks-recorder::InsertEthBlock::eth_blocks::error: %v\n", err)
+		logger.Error("eth-blocks-recorder::InsertEthBlock::eth_blocks::error", "error", err)
 		return err
 	}
 

@@ -3,8 +3,8 @@ package eth_block
 import (
 	"context"
 	"encoding/json"
+	"eth-blocks-scheduler/pkg/logger"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"log"
 )
 
 type Repository interface {
@@ -35,11 +35,7 @@ func NewEthBlockRepository(ethBlocksRecorderQueueCh *amqp.Channel, ethBlocksReco
 }
 
 func (ebr *EthBlockRepository) PushBlocksForRecording(bd BlockDetails) error {
-	log.Printf("eth-blocks-scheduler::PushBlocksForRecording::transactions::%v\n", bd)
-
 	j, _ := json.MarshalIndent(&bd, "", "\t")
-
-	log.Printf("eth-blocks-scheduler::PushBlocksForRecording::j::%v\n", j)
 
 	err := ebr.ethBlocksRecorderQueueCh.PublishWithContext(context.TODO(),
 		ebr.ethBlocksRecorderQueueName,
@@ -54,6 +50,7 @@ func (ebr *EthBlockRepository) PushBlocksForRecording(bd BlockDetails) error {
 	)
 
 	if err != nil {
+		logger.Error("eth-blocks-scheduler::PushBlocksForRecording::error", "error", err)
 		return err
 	}
 
@@ -61,11 +58,7 @@ func (ebr *EthBlockRepository) PushBlocksForRecording(bd BlockDetails) error {
 }
 
 func (ebr *EthBlockRepository) PushBlocksForRedis(bd BlockDetails) error {
-	log.Printf("eth-blocks-scheduler::PushBlocksForRedis::transactions::%v\n", bd)
-
 	j, _ := json.MarshalIndent(&bd, "", "\t")
-
-	log.Printf("eth-blocks-scheduler::PushBlocksForRecording::j::%v\n", j)
 
 	err := ebr.ethRedisRecorderQueueCh.PublishWithContext(context.TODO(),
 		ebr.ethRedisRecorderQueueName,
@@ -80,6 +73,7 @@ func (ebr *EthBlockRepository) PushBlocksForRedis(bd BlockDetails) error {
 	)
 
 	if err != nil {
+		logger.Error("eth-blocks-scheduler::PushBlocksForRedis::error", "error", err)
 		return err
 	}
 
@@ -87,12 +81,7 @@ func (ebr *EthBlockRepository) PushBlocksForRedis(bd BlockDetails) error {
 }
 
 func (ebr *EthBlockRepository) PushTransactionsForScheduling(transactions []string) error {
-
-	log.Printf("eth-blocks-scheduler::PushTransactionsForScheduling::transactions::%v\n", transactions)
 	j, _ := json.MarshalIndent(&transactions, "", "\t")
-
-	log.Printf("eth-blocks-scheduler::PushTransactionsForScheduling::j::%v\n", j)
-	log.Printf("eth-blocks-scheduler::PushTransactionsForScheduling::ebr.ethTransactionsSchedulerQueueName::%v\n", ebr.ethTransactionsSchedulerQueueName)
 
 	err := ebr.ethTransactionsSchedulerQueueCh.PublishWithContext(context.TODO(),
 		ebr.ethTransactionsSchedulerQueueName,
@@ -107,6 +96,7 @@ func (ebr *EthBlockRepository) PushTransactionsForScheduling(transactions []stri
 	)
 
 	if err != nil {
+		logger.Error("eth-blocks-scheduler::PushTransactionsForScheduling::error", "error", err)
 		return err
 	}
 

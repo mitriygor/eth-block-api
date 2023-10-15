@@ -1,7 +1,5 @@
 package eth_transaction
 
-import "log"
-
 type Service interface {
 	InsertEthTransactionService(bd EthTransaction) error
 }
@@ -17,7 +15,5 @@ func NewEthTransactionService(repo Repository) Service {
 }
 
 func (ebs *ethTransactionService) InsertEthTransactionService(et EthTransaction) error {
-	log.Printf("eth-transactions-recorder::ERROR::InsertEthTransactionService::et: %v\n", et)
-
 	return ebs.ethTransactionRepo.InsertEthTransaction(et)
 }

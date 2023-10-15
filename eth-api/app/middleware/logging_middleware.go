@@ -8,10 +8,9 @@ import (
 
 func LoggingMiddleware(c *fiber.Ctx) error {
 	start := time.Now()
-
 	err := c.Next()
 
-	log.Printf("%s - %s - %s", c.IP(), c.Method(), c.Path(), time.Since(start))
+	log.Printf("%v - %v - %v - %v", c.IP(), c.Method(), c.Path(), time.Since(start))
 
 	return err
 }

@@ -5,63 +5,103 @@ import (
 	"eth-helpers/url_helper"
 	"eth-transactions-scheduler/event"
 	"eth-transactions-scheduler/internal/eth_transaction"
+	"eth-transactions-scheduler/pkg/logger"
 	"github.com/joho/godotenv"
-	"log"
+	amqp "github.com/rabbitmq/amqp091-go"
+	"go.uber.org/zap"
 	"os"
 	"strconv"
 )
 
 func main() {
-	err := godotenv.Load()
+	err := logger.Initialize("info")
 	if err != nil {
-		log.Println("eth-transactions-scheduler::ERROR::Error loading .env file")
+		panic(err)
+	}
+	defer func(Log *zap.SugaredLogger) {
+		err := Log.Sync()
+		if err != nil {
+			logger.Error("eth-transactions-recorder:ERROR:sync", "error", err)
+		}
+	}(logger.Log)
+
+	err = godotenv.Load()
+	if err != nil {
+		logger.Error("eth-transactions-scheduler:ERROR:loading_env", "error", err)
 	}
 
 	requesterInterval, err := strconv.Atoi(os.Getenv("REQUESTER_INTERVAL"))
 	if err != nil {
-		log.Println("eth-transactions-scheduler::ERROR::requesterInterval: Error converting interval to integer")
+		logger.Error("eth-transactions-scheduler:ERROR:requesterInterval", "error", err)
 	}
 
 	// Queue from which the service will consume the transactions
 	ethTransactionsSchedulerQueue := os.Getenv("ETH_TRANSACTIONS_SCHEDULER_QUEUE")
 	ethTransactionsSchedulerQueueConn, err := connector.ConnectToQueue(ethTransactionsSchedulerQueue)
 	if err != nil {
-		log.Printf("eth-transactions-scheduler::ERROR::connForApi::err: %v\n", err)
+		logger.Error("eth-transactions-scheduler:ERROR:connForApi", "error", err)
 		os.Exit(1)
 	}
-	defer ethTransactionsSchedulerQueueConn.Close()
+	defer func(ethTransactionsSchedulerQueueConn *amqp.Connection) {
+		err := ethTransactionsSchedulerQueueConn.Close()
+		if err != nil {
+			logger.Error("eth-transactions-scheduler:ERROR:connForApi:close", "error", err)
+		}
+	}(ethTransactionsSchedulerQueueConn)
 
 	// Queue to which the service will send the transactions for further recording to the database
 	ethTransactionsRecorderQueue := os.Getenv("ETH_TRANSACTIONS_RECORDER_QUEUE")
 	ethTransactionsRecorderQueueName := os.Getenv("ETH_TRANSACTIONS_RECORDER_QUEUE_NAME")
 	ethTransactionsRecorderQueueConn, err := connector.ConnectToQueue(ethTransactionsRecorderQueue)
 	if err != nil {
-		log.Printf("eth-transactions-scheduler::ERROR::connForApi::err: %v\n", err)
+		logger.Error("eth-transactions-scheduler:ERROR:connForApi", "error", err)
 		os.Exit(1)
 	}
-	defer ethTransactionsRecorderQueueConn.Close()
+	defer func(ethTransactionsRecorderQueueConn *amqp.Connection) {
+		err := ethTransactionsRecorderQueueConn.Close()
+		if err != nil {
+			logger.Error("eth-transactions-scheduler:ERROR:connForApi:close", "error", err)
+		}
+	}(ethTransactionsRecorderQueueConn)
 
 	ethTransactionsRecorderQueueCh, err := ethTransactionsRecorderQueueConn.Channel()
 	if err != nil {
-		log.Fatalf("%s: %s", "eth-transactions-scheduler::ERROR::failed to open ethTransactionsRecorderQueueCh:", err)
+		logger.Error("eth-transactions-scheduler:ERROR:connForApi:close", "error", err)
+		panic(err)
 	}
-	defer ethTransactionsRecorderQueueCh.Close()
+	defer func(ethTransactionsRecorderQueueCh *amqp.Channel) {
+		err := ethTransactionsRecorderQueueCh.Close()
+		if err != nil {
+			logger.Error("eth-transactions-scheduler:ERROR:connForApi:close", "error", err)
+		}
+	}(ethTransactionsRecorderQueueCh)
 
 	// Queue to which the service will send the transactions for further recording to the cache
 	ethRedisRecorderQueue := os.Getenv("ETH_REDIS_RECORDER_QUEUE")
 	ethRedisRecorderQueueName := os.Getenv("ETH_REDIS_RECORDER_QUEUE_NAME")
 	ethRedisRecorderQueueConn, err := connector.ConnectToQueue(ethRedisRecorderQueue)
 	if err != nil {
-		log.Printf("eth-transactions-scheduler::ERROR::connForApi::err: %v\n", err)
+		logger.Error("eth-transactions-scheduler:ERROR:connForApi", "error", err)
 		os.Exit(1)
 	}
-	defer ethRedisRecorderQueueConn.Close()
+	defer func(ethRedisRecorderQueueConn *amqp.Connection) {
+		err := ethRedisRecorderQueueConn.Close()
+		if err != nil {
+			logger.Error("eth-transactions-scheduler:ERROR:connForApi:close", "error", err)
+		}
+	}(ethRedisRecorderQueueConn)
 
 	ethRedisRecorderQueueCh, err := ethRedisRecorderQueueConn.Channel()
 	if err != nil {
-		log.Fatalf("%s: %s", "eth-transactions-scheduler::ERROR::failed to open ethRedisRecorderQueueCh:", err)
+		logger.Error("eth-transactions-scheduler:ERROR:connForApi:close", "error", err)
+		panic(err)
 	}
-	defer ethRedisRecorderQueueCh.Close()
+	defer func(ethRedisRecorderQueueCh *amqp.Channel) {
+		err := ethRedisRecorderQueueCh.Close()
+		if err != nil {
+			logger.Error("eth-transactions-scheduler:ERROR:connForApi:close", "error", err)
+		}
+	}(ethRedisRecorderQueueCh)
 
 	// Declaring the API's service and repository
 	endpoint := os.Getenv("HTTP_ENDPOINT")
@@ -77,13 +117,11 @@ func main() {
 	consumer, err := event.NewConsumer(ethTransactionsSchedulerQueueConn, ethTransactionService, requesterInterval)
 
 	if err != nil {
-		log.Printf("eth-transactions-scheduler:ERROR: RabbitMQ consumer panic: %v\n", err)
+		logger.Error("eth-transactions-scheduler:ERROR: RabbitMQ consumer panic", "error", err)
 	}
-
-	log.Println("eth-blocks-recorder:RabbitMQ:consumer: Consumer is established")
 
 	err = consumer.Listen([]string{"log.INFO"})
 	if err != nil {
-		log.Printf("eth-blocks-recorder::ERROR::RabbitMQ:consume:error: %v\n", err)
+		logger.Error("eth-transactions-scheduler:ERROR: RabbitMQ consumer panic", "error", err)
 	}
 }

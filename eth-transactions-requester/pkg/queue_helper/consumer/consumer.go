@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"eth-transactions-requester/internal/eth_transaction"
+	"eth-transactions-requester/pkg/logger"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"log"
 )
 
 func Consume(ch *amqp.Channel, name string, service eth_transaction.Service) {
@@ -18,7 +18,7 @@ func Consume(ch *amqp.Channel, name string, service eth_transaction.Service) {
 		nil,
 	)
 	if err != nil {
-		log.Fatalf("%s: %s", "Failed to declare a queue", err)
+		logger.Error("eth-transactions-requester::Consume::ch.QueueDeclare", "err", err, "name", name)
 	}
 
 	msgs, err := ch.Consume(
@@ -31,38 +31,25 @@ func Consume(ch *amqp.Channel, name string, service eth_transaction.Service) {
 		nil,
 	)
 	if err != nil {
-		log.Fatalf("%s: %s", "Failed to register a consumer", err)
+		logger.Error("eth-transactions-requester::Consume::ch.Consume", "err", err, "name", name)
 	}
 
 	for d := range msgs {
 		var response string
-		//var eti eth_transaction.EthTransactionIdentifier
-
-		//log.Printf("eth-transactions-requester::Consume::d.Body: %v\n", d.Body)
-		//log.Printf("eth-transactions-requester::Consume::d.Body: %v\n", []byte(d.Body))
-		log.Printf("eth-transactions-requester::Consume::d.Body: %v\n", string(d.Body))
 		hash := string(d.Body)
-		//err := json.Unmarshal([]byte(d.Body), &eti)
-		//if err != nil {
-		//	log.Fatalf("eth-transactions-requester::ERROR::Error unmarshaling JSON: %v\n", err)
-		//}
 
 		transactionResponse, err := service.GetEthTransaction(hash)
 
-		log.Printf("eth-transactions-requester::Consume::err: %v\n", err)
-		log.Printf("eth-transactions-requester::Consume::transactionResponse: %v\n", transactionResponse)
-
 		if err == nil && transactionResponse != nil {
 			jsonStr, err := json.MarshalIndent(transactionResponse, "", "  ")
-			log.Printf("eth-transactions-requester::Consume::err: %v\n", err)
-			log.Printf("eth-transactions-requester::Consume::jsonStr: %v\n", jsonStr)
-
 			if err == nil {
 				response = string(jsonStr)
+			} else {
+				logger.Error("eth-transactions-requester::Consume::json.MarshalIndent", "err", err)
 			}
+		} else if err != nil {
+			logger.Error("eth-transactions-requester::Consume::service.GetEthTransaction", "err", err)
 		}
-
-		log.Printf("eth-transactions-requester::Consume::response: %v\n", response)
 
 		err = ch.PublishWithContext(context.TODO(),
 			"",
@@ -75,10 +62,8 @@ func Consume(ch *amqp.Channel, name string, service eth_transaction.Service) {
 				Body:          []byte(response),
 			})
 
-		log.Printf("eth-transactions-requester::Consume::err: %v\n", err)
-
 		if err != nil {
-			log.Printf("Failed to publish a message: %s", err)
+			logger.Error("eth-transactions-requester::Consume::ch.PublishWithContext", "err", err)
 		}
 	}
 }

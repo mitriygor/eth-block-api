@@ -1,10 +1,10 @@
 package eth_block
 
 import (
+	"eth-blocks-scheduler/pkg/logger"
 	"eth-helpers/json_helper"
 	"eth-helpers/url_helper"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -34,13 +34,10 @@ func NewEthBlockService(repo Repository, url string, jsonRpc string, cacheSize i
 
 func (ebs *ethBlockService) PushLatestBlocks() {
 	latest := ebs.getLatestBlockNumber()
-
-	log.Printf("eth-blocks-scheduler::PushLatestBlocks::latest::%v\n", latest)
 	diff := latest - ebs.cacheSize
-	log.Printf("eth-blocks-scheduler::PushLatestBlocks::diff::%v\n", diff)
 
 	if diff < 0 {
-		log.Println("eth-blocks-scheduler::Issue to get blocks numbers")
+		logger.Error("eth-blocks-scheduler::Issue to get blocks numbers", "latest", latest, "cacheSize", ebs.cacheSize)
 		return
 	}
 
@@ -48,11 +45,9 @@ func (ebs *ethBlockService) PushLatestBlocks() {
 		blockResponse, err := ebs.getBlockByNumber(i)
 
 		if err != nil {
-			log.Printf("eth-blocks-scheduler::PushLatestBlocks::blockResponse::error:%v\n", err)
+			logger.Error("eth-blocks-scheduler::PushLatestBlocks::blockResponse::error", "error", err)
 			continue
 		}
-
-		log.Printf("eth-blocks-scheduler::PushLatestBlocks::blockResponse::%v\n", blockResponse.Result)
 
 		ebs.pushBlock(blockResponse.Result)
 
@@ -61,13 +56,21 @@ func (ebs *ethBlockService) PushLatestBlocks() {
 }
 
 func (ebs *ethBlockService) pushBlock(blockDetails BlockDetails) {
-
-	log.Printf("eth-blocks-scheduler::pushBlock::blockDetails::%v\n", blockDetails)
-
-	ebs.ethBlockRepo.PushBlocksForRecording(blockDetails)
-	ebs.ethBlockRepo.PushBlocksForRedis(blockDetails)
-	ebs.ethBlockRepo.PushTransactionsForScheduling(blockDetails.Transactions)
-
+	err := ebs.ethBlockRepo.PushBlocksForRecording(blockDetails)
+	if err != nil {
+		logger.Error("eth-blocks-scheduler::pushBlock::PushBlocksForRecording::error", "error", err)
+		return
+	}
+	err = ebs.ethBlockRepo.PushBlocksForRedis(blockDetails)
+	if err != nil {
+		logger.Error("eth-blocks-scheduler::pushBlock::PushBlocksForRedis::error", "error", err)
+		return
+	}
+	err = ebs.ethBlockRepo.PushTransactionsForScheduling(blockDetails.Transactions)
+	if err != nil {
+		logger.Error("eth-blocks-scheduler::pushBlock::PushTransactionsForScheduling::error", "error", err)
+		return
+	}
 }
 
 func (ebs *ethBlockService) getLatestBlockNumber() int {
@@ -81,7 +84,7 @@ func (ebs *ethBlockService) getLatestBlockNumber() int {
 	var result BlockNumberResponse
 
 	if err := json_helper.PostRequest(ebs.url, body, &result); err != nil {
-		log.Printf("eth-blocks-scheduler::Failed to post request: %v\n", err)
+		logger.Error("eth-blocks-scheduler::Failed to post request", "error", err)
 		return -1
 	}
 
@@ -101,7 +104,7 @@ func (ebs *ethBlockService) getBlockByNumber(blockNumber int) (BlockResponse, er
 	var result BlockResponse
 
 	if err := json_helper.PostRequest(ebs.url, body, &result); err != nil {
-		log.Printf("eth-blocks-scheduler::Failed to post request: %v\n", err)
+		logger.Error("eth-blocks-scheduler::Failed to post request", "error", err)
 		return result, err
 	}
 
@@ -116,7 +119,7 @@ func (ebs *ethBlockService) HexToInt(hexStr string) int {
 
 	intValue, err := strconv.ParseInt(hexStr, 16, 64)
 	if err != nil {
-		log.Printf("eth-blocks-scheduler::ERROR::HexToInt::error: %v\n", err)
+		logger.Error("eth-blocks-scheduler::ERROR::HexToInt::error", "error", err)
 		return -1
 	}
 
