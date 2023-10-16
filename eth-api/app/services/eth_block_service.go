@@ -8,8 +8,8 @@ import (
 import "eth-api/app/models"
 
 type EthBlockService interface {
-	GetBlockByIdentifierService(hash string) (*models.BlockDetails, error)
 	GetLatestEthBlocks() ([]*models.BlockDetails, error)
+	GetBlockByIdentifierService(hash string) (*models.BlockDetails, error)
 }
 
 type ethBlockService struct {
@@ -34,21 +34,21 @@ func (ebs *ethBlockService) GetLatestEthBlocks() ([]*models.BlockDetails, error)
 	return latestBlockDetails, nil
 }
 
-func (ebs *ethBlockService) GetBlockByIdentifierService(blockIdentifier string) (*models.BlockDetails, error) {
+func (ebs *ethBlockService) GetBlockByIdentifierService(hash string) (*models.BlockDetails, error) {
 	var bd *models.BlockDetails
 	var err error
 
 	identifierType := "hash"
 
-	if eth_block_helper.IsInt(blockIdentifier) {
-		num := eth_block_helper.StringToInt(blockIdentifier)
-		blockIdentifier = eth_block_helper.IntToHex(num)
+	if eth_block_helper.IsInt(hash) {
+		num := eth_block_helper.StringToInt(hash)
+		hash = eth_block_helper.IntToHex(num)
 		identifierType = "number"
-	} else if eth_block_helper.IsHex(blockIdentifier) {
+	} else if eth_block_helper.IsHex(hash) {
 		identifierType = "number"
 	}
 
-	bd, err = ebs.ethBlockRepo.GetEthBlockByIdentifier(blockIdentifier, identifierType)
+	bd, err = ebs.ethBlockRepo.GetEthBlockByIdentifier(hash, identifierType)
 
 	if err != nil {
 		logger.Error("eth-api::ERROR::GetBlockByIdentifierService", "error", err)
